@@ -19,6 +19,8 @@ import {
   Settings,
   Users,
 } from 'lucide-react';
+import { APP_NAME } from '@/lib/brand';
+import { BrandMark } from '@/components/BrandMark';
 
 interface SidebarProps {
   currentUser: User;
@@ -129,12 +131,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center justify-between border-b border-slate-800/80 px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-cyan-400 shadow-lg shadow-sky-500/25 text-white">
-              <Sparkles className="h-5 w-5" />
+              <BrandMark className="h-5 w-5" />
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <h1 className="text-sm font-bold tracking-tight text-white truncate">SCIDaR ActionAI</h1>
+                  <h1 className="text-sm font-bold tracking-tight text-white truncate">{APP_NAME}</h1>
                 </div>
                 <p className="text-[11px] font-medium text-slate-400 truncate flex items-center gap-1">
                   <Building2 className="h-3 w-3 text-slate-500" />

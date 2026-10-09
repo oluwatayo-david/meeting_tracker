@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase';
 import { getAppUrl } from '@/lib/url';
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, ShieldAlert, KeyRound, RefreshCw, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import { APP_NAME, APP_TAGLINE } from '@/lib/brand';
+import { BrandMark } from '@/components/BrandMark';
 
 const DEACTIVATED_MESSAGE = 'Your account has been deactivated. Contact your administrator to restore access.';
 
@@ -97,10 +99,10 @@ function LoginForm() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/30 mb-4">
-            <Zap className="h-8 w-8 text-white" />
+            <BrandMark className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Meeting Intelligence</h1>
-          <p className="text-slate-400 mt-1.5 text-sm">AI-Powered Action Tracker</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">{APP_NAME}</h1>
+          <p className="text-slate-400 mt-1.5 text-sm">{APP_TAGLINE}</p>
         </div>
 
         {/* Card */}

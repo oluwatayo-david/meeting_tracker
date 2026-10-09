@@ -14,6 +14,7 @@ import {
   ListOrdered,
   X
 } from 'lucide-react';
+import { COPILOT_NAME } from '@/lib/brand';
 
 interface AiCoPilotModalProps {
   actionItem: ActionItem;
@@ -58,7 +59,7 @@ export const AiCoPilotModal: React.FC<AiCoPilotModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-slate-900">Gemini Task Research Co-Pilot</h3>
+                <h3 className="text-base font-bold text-slate-900">{COPILOT_NAME}</h3>
                 <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
                   AI Assistant
                 </span>
@@ -101,7 +102,7 @@ export const AiCoPilotModal: React.FC<AiCoPilotModalProps> = ({
                 className="flex items-center gap-1 text-xs font-semibold text-sky-600 hover:text-sky-700 disabled:opacity-50"
               >
                 <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-                <span>{loading ? 'Consulting Gemini...' : 'Regenerate Analysis'}</span>
+                <span>{loading ? 'Analysing...' : 'Regenerate Analysis'}</span>
               </button>
             </div>
 
@@ -145,7 +146,7 @@ export const AiCoPilotModal: React.FC<AiCoPilotModalProps> = ({
 
         {/* Footer */}
         <div className="border-t border-slate-200 bg-slate-50 px-6 py-3 flex items-center justify-between">
-          <span className="text-[11px] text-slate-500">Powered by Google Gemini 1.5 Flash</span>
+          <span className="text-[11px] text-slate-500">AI-generated guidance — review before acting</span>
           <button
             onClick={onClose}
             className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"

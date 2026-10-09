@@ -15,6 +15,7 @@ import {
   User as UserIcon,
   Settings,
 } from 'lucide-react';
+import { APP_NAME } from '@/lib/brand';
 
 type TabId = 'overview' | 'meetings' | 'actions' | 'manager' | 'admin';
 
@@ -60,7 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'actions': return { section: 'Execution', page: currentUser.role === 'STAFF' ? 'My Action Items' : 'Action Items & Deliverables' };
       case 'manager': return { section: 'Governance', page: 'Manager Verification Portal' };
       case 'admin': return { section: 'Administration', page: 'User Management & Onboarding' };
-      default: return { section: 'Workspace', page: 'ActionAI' };
+      default: return { section: 'Workspace', page: APP_NAME };
     }
   };
 
@@ -125,7 +126,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Breadcrumb Navigation */}
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium truncate">
-              <span>SCIDaR HQ</span>
+              <span>{APP_NAME}</span>
               <span className="text-slate-400">/</span>
               <span className="text-slate-600 font-medium">{breadcrumb.section}</span>
             </div>

@@ -7,6 +7,8 @@ import { getAppUrl } from '@/lib/url';
 import { Zap, Mail, Lock, Eye, EyeOff, User, Building2, ArrowRight, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { DEPARTMENTS } from '@/lib/departments';
+import { APP_NAME } from '@/lib/brand';
+import { BrandMark } from '@/components/BrandMark';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -110,10 +112,10 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/30 mb-4">
-            <Zap className="h-8 w-8 text-white" />
+            <BrandMark className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Join Your Department</h1>
-          <p className="text-slate-400 mt-1.5 text-sm">Create your workspace account</p>
+          <p className="text-slate-400 mt-1.5 text-sm">Create your {APP_NAME} account</p>
         </div>
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">

@@ -360,7 +360,7 @@ export const NewMeetingModal: React.FC<NewMeetingModalProps> = ({
           <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5 flex items-center gap-3 text-xs text-slate-600">
             <Sparkles className="h-4 w-4 text-sky-600 shrink-0" />
             <p>
-              When you open the meeting room and click <strong>Start Recording</strong>, Gemini AI will transcribe speech and autonomously extract action points into the board.
+              When you open the meeting room and click <strong>Start Recording</strong>, speech is transcribed and action points are extracted into the board automatically.
             </p>
           </div>
 

@@ -142,7 +142,7 @@ export const ManagerPortalView: React.FC<ManagerPortalViewProps> = ({
                         <FileCheck2 className="h-3.5 w-3.5" /> Ready for Verification
                       </span>
                       <span className="text-xs text-slate-500 font-medium">
-                        Meeting: {action.meetingTitle || 'SCIDaR Strategy'}
+                        Meeting: {action.meetingTitle || 'Untitled meeting'}
                       </span>
                     </div>
                     <h3 className="text-base font-bold text-slate-900">{action.title}</h3>

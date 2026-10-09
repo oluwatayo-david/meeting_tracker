@@ -514,7 +514,7 @@ export function RecordingPanel({
             <div className="rounded-xl bg-sky-500/10 border border-sky-500/20 p-3 text-xs text-sky-300 flex items-center gap-2">
               <Sparkles className="h-4 w-4 shrink-0 text-sky-400" />
               <span>
-                Browser live speech-to-text is not supported in this browser. Don&apos;t worry: your microphone audio is recorded and will be transcribed automatically by Gemini AI upon stopping.
+                Browser live speech-to-text is not supported in this browser. Don&apos;t worry: your microphone audio is recorded and will be transcribed automatically when you stop.
               </span>
             </div>
           )}
@@ -555,7 +555,7 @@ export function RecordingPanel({
               <div className="flex flex-col items-center justify-center space-y-2">
                 <FileAudio className="h-8 w-8 text-sky-400" />
                 <p className="text-xs font-bold text-slate-200">Click to browse or drag & drop meeting audio</p>
-                <p className="text-[10px] text-slate-500">Gemini will automatically transcribe and extract action points</p>
+                <p className="text-[10px] text-slate-500">Audio is transcribed and action points extracted automatically</p>
               </div>
             )}
           </div>
@@ -583,7 +583,7 @@ export function RecordingPanel({
                 {activeMode === 'mic'
                   ? 'Click "Start Live Recording" and speak clearly.'
                   : activeMode === 'upload'
-                  ? 'Upload an audio file above to transcribe with Gemini.'
+                  ? 'Upload an audio file above to transcribe it.'
                   : 'Type or paste meeting minutes below and click Process.'}
               </p>
             </div>
@@ -626,7 +626,7 @@ export function RecordingPanel({
                 onClick={handleManualProcess}
                 className="text-xs font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1 cursor-pointer"
               >
-                <Sparkles className="h-3.5 w-3.5" /> Process with Gemini AI
+                <Sparkles className="h-3.5 w-3.5" /> Process with AI
               </button>
             )}
           </div>

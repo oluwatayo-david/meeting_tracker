@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { COPILOT_NAME } from '@/lib/brand';
 
 const apiKey = process.env.GEMINI_API_KEY || "";
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
@@ -148,7 +149,7 @@ export async function generateActionCoPilotAdvice(
   description: string
 ): Promise<string> {
   try {
-    const prompt = `You are Gemini AI Task Co-Pilot. A team member has been assigned the following action item:
+    const prompt = `You are ${COPILOT_NAME}, an execution assistant. A team member has been assigned the following action item:
 Title: ${actionTitle}
 Details: ${description}
 

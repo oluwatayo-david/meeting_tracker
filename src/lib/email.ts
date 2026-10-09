@@ -21,8 +21,9 @@
 import nodemailer, { type Transporter } from 'nodemailer';
 import type { Meeting } from '@/types';
 import { getAppUrl } from '@/lib/url';
+import { APP_NAME } from '@/lib/brand';
 
-const ORG_NAME = process.env.EMAIL_ORG_NAME || 'SCIDaR ActionAI Workspace';
+const ORG_NAME = process.env.EMAIL_ORG_NAME || APP_NAME;
 const BRAND_COLOR = '#4f46e5';
 const EMAILJS_ENDPOINT = 'https://api.emailjs.com/api/v1.0/email/send';
 const EMAILJS_MIN_GAP_MS = 1100; // EmailJS accepts ~1 request per second

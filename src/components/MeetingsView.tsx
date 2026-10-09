@@ -149,7 +149,7 @@ export const MeetingsView: React.FC<MeetingsViewProps> = ({
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">Meetings & Voice Transcripts</h2>
           <p className="text-xs text-slate-500">
-            Recorded audio sessions processed with Gemini multimodal models for autonomous action point extraction.
+            Recorded audio is transcribed automatically and action points are extracted for you.
           </p>
         </div>
 
@@ -330,7 +330,7 @@ export const MeetingsView: React.FC<MeetingsViewProps> = ({
                 <div className="rounded-xl bg-indigo-50/50 border border-indigo-100/70 p-3 space-y-1">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-900">
                     <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
-                    <span>Gemini AI Executive Summary</span>
+                    <span>AI Executive Summary</span>
                   </div>
                   <p className="text-xs text-indigo-950/80 leading-relaxed">{meeting.summary}</p>
                 </div>

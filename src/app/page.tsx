@@ -15,6 +15,7 @@ import { NewMeetingModal } from '@/components/NewMeetingModal';
 import { AuditModal } from '@/components/AuditModal';
 import { useAuth } from '@/components/AuthProvider';
 import { CheckCircle2, AlertCircle, Info, X, Plus, Loader2 } from 'lucide-react';
+import { COPILOT_NAME } from '@/lib/brand';
 
 type TabId = 'overview' | 'meetings' | 'actions' | 'manager' | 'admin';
 
@@ -229,7 +230,7 @@ export default function Home() {
       }
       return 'Unable to generate advice at this moment.';
     } catch {
-      return 'Error requesting Gemini Co-Pilot advice.';
+      return `Error requesting ${COPILOT_NAME} advice.`;
     }
   };
 

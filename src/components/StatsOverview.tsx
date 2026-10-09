@@ -12,6 +12,7 @@ import {
   TrendingUp,
   ArrowUpRight
 } from 'lucide-react';
+import { APP_NAME, COPILOT_NAME } from '@/lib/brand';
 
 interface StatsOverviewProps {
   actionItems: ActionItem[];
@@ -47,13 +48,13 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-sky-400/15 border border-sky-400/20 px-3 py-1 text-xs font-semibold text-sky-300">
               <Sparkles className="h-3.5 w-3.5 text-sky-400" />
-              SCIDaR Continuous Accountability Engine
+              {APP_NAME}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Meeting Action Tracking & Execution Verification
             </h1>
             <p className="text-sm text-slate-300 leading-relaxed">
-              Automated extraction via Google Gemini 1.5 Flash Audio, instant research co-pilot for assignees, and a closed-loop manager verification portal with EmailJS reminders.
+              Automatic transcription and action point extraction, the {COPILOT_NAME} for assignees, and a closed-loop manager verification portal with email reminders.
             </p>
           </div>
 

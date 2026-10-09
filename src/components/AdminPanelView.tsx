@@ -27,6 +27,7 @@ import {
   Ban,
 } from 'lucide-react';
 import { DEPARTMENTS } from '@/lib/departments';
+import { APP_NAME, COPILOT_NAME } from '@/lib/brand';
 
 interface AdminPanelViewProps {
   currentUser: User;
@@ -153,7 +154,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
 
   const handleCopyCredentials = () => {
     if (!provisionResult) return;
-    const text = `🎉 You have been onboarded to SCIDaR ActionAI Workspace!\n\nEmail: ${provisionResult.user.email}\nTemporary Password: ${provisionResult.tempPassword}\nDepartment: ${provisionResult.user.department}\nRole: ${provisionResult.user.role}\n\nLogin here: ${provisionResult.loginUrl}`;
+    const text = `🎉 You have been onboarded to ${APP_NAME}!\n\nEmail: ${provisionResult.user.email}\nTemporary Password: ${provisionResult.tempPassword}\nDepartment: ${provisionResult.user.department}\nRole: ${provisionResult.user.role}\n\nLogin here: ${provisionResult.loginUrl}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     onShowToast('Onboarding credentials copied to clipboard!', 'success');
@@ -355,7 +356,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
               <span className="text-[10px] font-semibold text-sky-700">Execution Level</span>
             </div>
             <p className="text-slate-700 text-[11px] leading-relaxed">
-              Accesses assigned tasks, leverages Gemini AI Co-Pilot for execution planning, and submits deliverables for manager sign-off.
+              Accesses assigned tasks, uses the {COPILOT_NAME} for execution planning, and submits deliverables for manager sign-off.
             </p>
           </div>
         </div>

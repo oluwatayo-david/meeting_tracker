@@ -19,6 +19,7 @@ import {
   X,
   Loader2
 } from 'lucide-react';
+import { COPILOT_NAME } from '@/lib/brand';
 
 interface ActionItemsViewProps {
   actionItems: ActionItem[];
@@ -340,7 +341,7 @@ export const ActionItemsView: React.FC<ActionItemsViewProps> = ({
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200/80 hover:border-sky-300 text-indigo-700 text-xs font-semibold shadow-xs hover:shadow-sm transition-all cursor-pointer"
                   >
                     <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
-                    <span>Gemini AI Co-Pilot</span>
+                    <span>{COPILOT_NAME}</span>
                   </button>
 
                   {/* Send Reminder CTA (for managers) */}

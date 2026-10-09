@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
+import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from '@/lib/brand';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Meeting Intelligence — AI Action Tracker",
-  description: "Role-based meeting intelligence platform with live recording, AI transcription, action point extraction, and PowerPoint export",
+  title: `${APP_NAME} — ${APP_TAGLINE}`,
+  description: APP_DESCRIPTION,
 };
 
 export default function RootLayout({
