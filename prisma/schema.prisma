@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum MeetingType {
+  INTERNAL
+  EXTERNAL
+}
+
+enum ParticipantType {
+  INTERNAL
+  EXTERNAL
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ActionStatus {
+  PENDING
+  IN_PROGRESS
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  role        Role     @default(STAFF)
+  department  String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  meetingsCreated       Meeting[]            @relation("CreatedMeetings")
+  assignedActionItems   ActionItem[]         @relation("AssignedActions")
+  submittedProofs       ProofSubmission[]    @relation("SubmittedProofs")
+  reviewedProofs        ProofSubmission[]    @relation("ReviewedProofs")
+  meetingParticipations MeetingParticipant[]
+  auditLogs             AuditLog[]
+}
+
+model Meeting {
+  id            String      @id @default(cuid())
+  title         String
+  description   String?
+  meetingType   MeetingType @default(INTERNAL)
+  meetingDate   DateTime    @default(now())
+  audioUrl      String?
+  audioDuration Int?
+  transcript    String?
+  summary       String?
+  createdById   String
+  createdBy     User        @relation("CreatedMeetings", fields: [createdById], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  participants MeetingParticipant[]
+  actionItems  ActionItem[]
+  auditLogs    AuditLog[]
+}
+
+model MeetingParticipant {
+  id        String          @id @default(cuid())
+  meetingId String
+  meeting   Meeting         @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?           @relation(fields: [userId], references: [id])
+  email     String
+  name      String
+  type      ParticipantType @default(INTERNAL)
+  createdAt DateTime        @default(now())
+}
+
+model ActionItem {
+  id                 String       @id @default(cuid())
+  meetingId          String
+  meeting            Meeting      @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  title              String
+  description        String?
+  assigneeId         String?
+  assignee           User?        @relation("AssignedActions", fields: [assigneeId], references: [id])
+  assigneeEmail      String?
+  dueDate            DateTime
+  priority           Priority     @default(MEDIUM)
+  status             ActionStatus @default(PENDING)
+  aiGuidance         String?
+  reminderCount      Int          @default(0)
+  lastReminderSentAt DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  proofSubmissions ProofSubmission[]
+  auditLogs        AuditLog[]
+}
+
+model ProofSubmission {
+  id           String       @id @default(cuid())
+  actionItemId String
+  actionItem   ActionItem   @relation(fields: [actionItemId], references: [id], onDelete: Cascade)
+  submittedById String
+  submittedBy  User         @relation("SubmittedProofs", fields: [submittedById], references: [id])
+  notes        String
+  fileUrl      String?
+  fileName     String?
+  fileType     String?
+  status       ReviewStatus @default(PENDING)
+  reviewNotes  String?
+  reviewedById String?
+  reviewedBy   User?        @relation("ReviewedProofs", fields: [reviewedById], references: [id])
+  reviewedAt   DateTime?
+  submittedAt  DateTime     @default(now())
+}
+
+model AuditLog {
+  id           String      @id @default(cuid())
+  actionItemId String?
+  actionItem   ActionItem? @relation(fields: [actionItemId], references: [id], onDelete: Cascade)
+  meetingId    String?
+  meeting      Meeting?    @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  actorId      String?
+  actor        User?       @relation(fields: [actorId], references: [id])
+  action       String
+  details      String?
+  createdAt    DateTime    @default(now())
+}
