@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { getAppUrl } from '@/lib/url';
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, ShieldAlert, KeyRound, RefreshCw, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -56,6 +57,9 @@ function LoginForm() {
       const { error: resendErr } = await supabase.auth.resend({
         type: 'signup',
         email: email.trim(),
+        options: {
+          emailRedirectTo: `${getAppUrl()}/auth/callback`,
+        },
       });
       if (resendErr) {
         setError(resendErr.message);

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { getAppUrl } from '@/lib/url';
 import {
   Mail, ArrowRight, CheckCircle2, AlertCircle, RefreshCw,
   KeyRound, ShieldCheck, Zap, ArrowLeft, ExternalLink, HelpCircle
@@ -105,6 +106,9 @@ function VerifyEmailContent() {
       const { error: resendError } = await supabase.auth.resend({
         type: 'signup',
         email: email.trim(),
+        options: {
+          emailRedirectTo: `${getAppUrl()}/auth/callback`,
+        },
       });
 
       if (resendError) {

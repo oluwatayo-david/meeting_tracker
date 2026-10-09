@@ -15,6 +15,7 @@ import {
   ProofSubmission,
   MeetingParticipant,
 } from '@/types';
+import { getAuthCallbackUrl } from '@/lib/url';
 
 // Service-role client for server-side API routes (bypasses RLS)
 export function getServiceClient() {
@@ -234,11 +235,17 @@ export async function dbInviteUser(
   email: string,
   name: string,
   role: User['role'],
-  department: string
+  department: string,
+  req?: Request
 ): Promise<{ success: boolean; message: string }> {
   const supabase = getServiceClient();
+
+  // Build dynamic redirect URL so the invitation link works in dev AND production
+  const redirectTo = getAuthCallbackUrl(req);
+
   const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: name, role, department },
+    redirectTo,
+    data: { full_name: name, name, role, department },
   });
   if (error) return { success: false, message: error.message };
 

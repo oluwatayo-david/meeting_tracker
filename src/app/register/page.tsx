@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { getAppUrl } from '@/lib/url';
 import { Zap, Mail, Lock, Eye, EyeOff, User, Building2, ArrowRight, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
@@ -48,6 +49,7 @@ export default function RegisterPage() {
       email: formData.email,
       password: formData.password,
       options: {
+        emailRedirectTo: `${getAppUrl()}/auth/callback`,
         data: {
           full_name: formData.fullName,
           department: formData.department,

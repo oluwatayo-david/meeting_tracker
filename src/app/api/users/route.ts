@@ -88,7 +88,8 @@ export async function POST(req: Request) {
       if (callerRole === 'MANAGER' && role !== 'STAFF') {
         return NextResponse.json({ error: 'Managers can only invite Staff members' }, { status: 403 });
       }
-      const result = await dbInviteUser(email.trim().toLowerCase(), name.trim(), role, department || '');
+      // Pass `req` so dbInviteUser builds a dynamic redirectTo URL (dev vs production)
+      const result = await dbInviteUser(email.trim().toLowerCase(), name.trim(), role, department || '', req);
       if (!result.success) {
         return NextResponse.json({ error: result.message }, { status: 400 });
       }
