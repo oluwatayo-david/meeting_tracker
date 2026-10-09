@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { User, Meeting, ActionItem, MeetingType } from '@/types';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
@@ -19,10 +19,12 @@ import { CheckCircle2, AlertCircle, Info, X, Plus, Loader2 } from 'lucide-react'
 type TabId = 'overview' | 'meetings' | 'actions' | 'manager' | 'admin';
 
 export default function Home() {
-  const { supabaseUser, appUser, loading: authLoading, signOut, refreshUser } = useAuth();
+  const { supabaseUser, appUser, loading: authLoading, profileError, signOut, refreshUser } = useAuth();
 
   // ─── Current User ──────────────────────────────────────────────────────────
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  // Always the database profile (via /api/me) — never user_metadata, which is
+  // user-editable and was making admins show up as STAFF.
+  const currentUser: User | null = supabaseUser ? appUser : null;
 
   // ─── App State ─────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<TabId>('overview');
@@ -50,52 +52,13 @@ export default function Home() {
     setTimeout(() => setToast(null), 4500);
   }, []);
 
-  // ─── Build currentUser from Supabase auth ─────────────────────────────────
-  const hasSyncedProfileRef = useRef(false);
-
+  // A role change picked up on refresh can revoke the tab currently open.
+  const canManage = currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN';
   useEffect(() => {
-    if (!supabaseUser) {
-      setCurrentUser(null);
-      return;
+    if (currentUser && !canManage && (activeTab === 'manager' || activeTab === 'admin')) {
+      setActiveTab('overview');
     }
-
-    // Prefer the full DB profile if available
-    if (appUser) {
-      setCurrentUser(appUser);
-      return;
-    }
-
-    // Fallback: derive from auth metadata
-    const metaName = supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name;
-    const derivedName = metaName || supabaseUser.email?.split('@')[0] || 'User';
-    const derivedUser: User = {
-      id: supabaseUser.id,
-      name: derivedName,
-      email: supabaseUser.email || '',
-      role: (supabaseUser.user_metadata?.role as User['role']) || 'STAFF',
-      department: supabaseUser.user_metadata?.department || '',
-      avatarUrl: supabaseUser.user_metadata?.avatar_url || undefined,
-      createdAt: supabaseUser.created_at,
-    };
-    setCurrentUser(derivedUser);
-
-    // Sync profile to DB once on load if needed
-    if (!hasSyncedProfileRef.current) {
-      hasSyncedProfileRef.current = true;
-      fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'upsert_profile',
-          id: derivedUser.id,
-          name: derivedUser.name,
-          email: derivedUser.email,
-          role: derivedUser.role,
-          department: derivedUser.department,
-        }),
-      }).catch(console.warn);
-    }
-  }, [supabaseUser, appUser]);
+  }, [currentUser, canManage, activeTab]);
 
   // ─── Fetch meetings and action items from DB ───────────────────────────────
   const loadData = useCallback(async () => {
@@ -325,6 +288,35 @@ export default function Home() {
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-sky-600" />
           <p className="text-xs font-semibold text-slate-500">Loading workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (supabaseUser && !currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3 text-center max-w-sm">
+          {profileError ? (
+            <>
+              <AlertCircle className="h-8 w-8 text-rose-500" />
+              <p className="text-sm font-semibold text-slate-800">We couldn&apos;t load your profile</p>
+              <p className="text-xs text-slate-500">{profileError}</p>
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => refreshUser()} className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold">
+                  Try again
+                </button>
+                <button onClick={() => signOut()} className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-white">
+                  Sign out
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Loader2 className="h-8 w-8 animate-spin text-sky-600" />
+              <p className="text-xs font-semibold text-slate-500">Loading your profile...</p>
+            </>
+          )}
         </div>
       </div>
     );

@@ -17,21 +17,7 @@ import {
   Mail,
   Plus
 } from 'lucide-react';
-
-const DEPARTMENTS = [
-  'Engineering',
-  'Programs',
-  'Finance',
-  'Communications',
-  'Monitoring & Evaluation',
-  'Operations',
-  'Human Resources',
-  'Research',
-  'Executive Office',
-  'Field Operations',
-  'Digital Health Solutions',
-  'Leadership & Program Strategy',
-];
+import { DEPARTMENTS } from '@/lib/departments';
 
 interface NewMeetingModalProps {
   currentUser: User;

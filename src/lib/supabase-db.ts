@@ -19,7 +19,7 @@ import {
   MeetingParticipant,
 } from '@/types';
 import { getAuthCallbackUrl } from '@/lib/url';
-import { canViewMeeting, type Viewer } from '@/lib/authz';
+import { canViewMeeting, isDeactivated, type Viewer } from '@/lib/authz';
 
 type Row = Record<string, unknown>;
 
@@ -285,7 +285,9 @@ export async function dbGetUsers(): Promise<User[]> {
   return (data || []).map(row => {
     const u = mapUser(row as Row);
     const au = authUsersMap.get(u.id);
-    if (au) {
+    if (au && isDeactivated(au.banned_until)) {
+      u.status = 'DEACTIVATED';
+    } else if (au) {
       const isPending = !au.last_sign_in_at && (Boolean(au.invited_at) || !au.confirmed_at);
       u.status = isPending ? 'PENDING' : 'ACTIVE';
       u.invitedAt = au.invited_at || undefined;
@@ -300,7 +302,7 @@ export async function dbGetUsers(): Promise<User[]> {
 async function listAllAuthUsers() {
   const supabase = getServiceClient();
   const perPage = 1000;
-  const all: { id: string; last_sign_in_at?: string | null; confirmed_at?: string | null; invited_at?: string | null }[] = [];
+  const all: { id: string; last_sign_in_at?: string | null; confirmed_at?: string | null; invited_at?: string | null; banned_until?: string | null }[] = [];
   for (let page = 1; page <= 50; page++) {
     const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
     if (error || !data) break;
@@ -363,21 +365,6 @@ export async function dbUpsertUser(user: Partial<User> & { id: string; email: st
       department: user.department || null,
       avatar_url: user.avatarUrl || null,
     }, { onConflict: 'id' })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return mapUser(data as Row);
-}
-
-/** A user editing their own profile: only cosmetic fields, never role/department/email. */
-export async function dbUpdateOwnProfile(id: string, updates: { name?: string; avatarUrl?: string }): Promise<User> {
-  const payload: Row = { updated_at: new Date().toISOString() };
-  if (updates.name?.trim()) payload.name = updates.name.trim();
-  if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl || null;
-  const { data, error } = await getServiceClient()
-    .from('users')
-    .update(payload)
-    .eq('id', id)
     .select()
     .single();
   if (error) throw new Error(error.message);
@@ -502,6 +489,23 @@ export async function dbUpdateUserRole(
   if (error) throw new Error(error.message);
 
   return mapUser(data as Row);
+}
+
+/**
+ * Deactivation bans the auth account (blocks sign-in and, via the middleware,
+ * any live session) but keeps the profile so meeting history stays intact.
+ */
+export async function dbSetUserActive(userId: string, active: boolean): Promise<void> {
+  const { error } = await getServiceClient().auth.admin.updateUserById(userId, {
+    ban_duration: active ? 'none' : '876000h', // ~100 years
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Number of admins whose accounts are not deactivated. */
+export async function dbCountActiveAdmins(): Promise<number> {
+  const users = await dbGetUsers();
+  return users.filter(u => u.role === 'ADMIN' && u.status !== 'DEACTIVATED').length;
 }
 
 // ─── Meetings ────────────────────────────────────────────────────────────────

@@ -7,6 +7,8 @@ import { getAppUrl } from '@/lib/url';
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, ShieldAlert, KeyRound, RefreshCw, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
+const DEACTIVATED_MESSAGE = 'Your account has been deactivated. Contact your administrator to restore access.';
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -26,6 +28,11 @@ function LoginForm() {
     if (searchParams.get('verified') === 'true') {
       setIsVerified(true);
     }
+    if (searchParams.get('error') === 'deactivated') {
+      // Drop the stale session cookie left behind by the deactivated account.
+      createClient().auth.signOut({ scope: 'local' }).catch(() => {});
+      setError(DEACTIVATED_MESSAGE);
+    }
   }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -40,6 +47,8 @@ function LoginForm() {
     if (error) {
       if ((error as { code?: string }).code === 'email_not_confirmed' || error.message.toLowerCase().includes('email not confirmed')) {
         setIsEmailNotConfirmed(true);
+      } else if ((error as { code?: string }).code === 'user_banned') {
+        setError(DEACTIVATED_MESSAGE);
       } else {
         setError(error.message);
       }

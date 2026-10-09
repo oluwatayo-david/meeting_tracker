@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isDeactivated } from '@/lib/authz';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -58,6 +59,20 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
+  }
+
+  // Deactivated accounts: a ban stops new sign-ins, this stops live sessions.
+  if (user && isDeactivated(user.banned_until)) {
+    if (isApiRoute) {
+      return NextResponse.json({ error: 'Your account has been deactivated' }, { status: 403 });
+    }
+    if (!isAuthPage && !isPublicAsset) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.search = '?error=deactivated';
+      return NextResponse.redirect(url);
+    }
+    user = null; // let them reach the login page
   }
 
   // Logged-in users redirected away from auth pages

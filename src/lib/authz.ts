@@ -51,5 +51,10 @@ export function canViewActionItem(viewer: Viewer, item: ActionItem, meeting: Mee
   return !!meeting && canManageMeeting(viewer, meeting);
 }
 
+/** Deactivated accounts are banned in Supabase Auth (see dbSetUserActive). */
+export function isDeactivated(bannedUntil: string | null | undefined): boolean {
+  return !!bannedUntil && new Date(bannedUntil).getTime() > Date.now();
+}
+
 /** Statuses an assignee may set on their own item. Approval only comes through manager review. */
 export const ASSIGNEE_SETTABLE_STATUSES: string[] = ['PENDING', 'IN_PROGRESS'];

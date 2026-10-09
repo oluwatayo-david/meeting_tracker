@@ -23,22 +23,10 @@ import {
   Filter,
   Sparkles,
   Clock,
+  Pencil,
+  Ban,
 } from 'lucide-react';
-
-const DEPARTMENTS = [
-  'Engineering',
-  'Programs',
-  'Finance',
-  'Communications',
-  'Monitoring & Evaluation',
-  'Operations',
-  'Human Resources',
-  'Research',
-  'Executive Office',
-  'Field Operations',
-  'Digital Health Solutions',
-  'Leadership & Program Strategy',
-];
+import { DEPARTMENTS } from '@/lib/departments';
 
 interface AdminPanelViewProps {
   currentUser: User;
@@ -61,6 +49,11 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
     loginUrl: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Edit-user dialog (admins only)
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({ role: 'STAFF' as User['role'], department: '', active: true });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const isAdmin = currentUser.role === 'ADMIN';
   const isManager = currentUser.role === 'MANAGER' || isAdmin;
@@ -167,26 +160,52 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
     setTimeout(() => setCopied(false), 3000);
   };
 
-  const handleRoleChange = async (userId: string, newRole: User['role']) => {
-    if (!isAdmin) {
-      onShowToast('Only administrators can change roles', 'error');
+  const openEditUser = (user: User) => {
+    setEditingUser(user);
+    setEditForm({
+      role: user.role,
+      department: user.department || '',
+      active: user.status !== 'DEACTIVATED',
+    });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    if (editForm.role === 'MANAGER' && !editForm.department) {
+      onShowToast('Choose a department for this manager', 'error');
       return;
     }
+
+    // Send only what changed
+    const patch: Record<string, unknown> = {};
+    if (editForm.role !== editingUser.role) patch.role = editForm.role;
+    if (editForm.department && editForm.department !== editingUser.department) patch.department = editForm.department;
+    if (editForm.active !== (editingUser.status !== 'DEACTIVATED')) patch.active = editForm.active;
+    if (Object.keys(patch).length === 0) {
+      setEditingUser(null);
+      return;
+    }
+
+    setSavingEdit(true);
     try {
-      const res = await fetch('/api/users', {
-        method: 'POST',
+      const res = await fetch(`/api/users/${editingUser.id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_role', userId, role: newRole }),
+        body: JSON.stringify(patch),
       });
       const data = await res.json();
       if (res.ok) {
-        onShowToast(`Role updated to ${newRole}`, 'success');
+        onShowToast(`${editingUser.name} updated`, 'success');
+        setEditingUser(null);
         await loadUsers();
       } else {
-        onShowToast(data.error || 'Failed to update role', 'error');
+        onShowToast(data.error || 'Failed to update user', 'error');
       }
     } catch {
-      onShowToast('Error updating role', 'error');
+      onShowToast('Error updating user', 'error');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -223,11 +242,21 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
     return matchesSearch && matchesDept;
   });
 
+  const activeUsers = users.filter(u => u.status !== 'DEACTIVATED');
   const roleStats = {
-    admin: users.filter(u => u.role === 'ADMIN').length,
-    manager: users.filter(u => u.role === 'MANAGER').length,
-    staff: users.filter(u => u.role === 'STAFF').length,
+    admin: activeUsers.filter(u => u.role === 'ADMIN').length,
+    manager: activeUsers.filter(u => u.role === 'MANAGER').length,
+    staff: activeUsers.filter(u => u.role === 'STAFF').length,
   };
+
+  const departmentOverview = DEPARTMENTS.map(dept => {
+    const members = activeUsers.filter(u => u.department === dept);
+    return {
+      dept,
+      managers: members.filter(u => u.role === 'MANAGER'),
+      staffCount: members.filter(u => u.role === 'STAFF').length,
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -263,7 +292,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
             className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-600 via-indigo-600 to-cyan-600 hover:from-sky-700 hover:to-indigo-700 text-white px-4 py-2.5 text-xs font-bold shadow-md shadow-sky-600/20 transition-all active:scale-95 cursor-pointer"
           >
             <UserPlus className="h-4 w-4" />
-            <span>+ Onboard New Staff</span>
+            <span>{isAdmin ? '+ Onboard Team Member' : '+ Onboard New Staff'}</span>
           </button>
         </div>
       </div>
@@ -331,6 +360,44 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
           </div>
         </div>
       </div>
+
+      {/* Department Coverage — who manages each department (admins only) */}
+      {isAdmin && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-indigo-600" />
+            Department Coverage
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            {departmentOverview.map(({ dept, managers, staffCount }) => (
+              <button
+                key={dept}
+                type="button"
+                onClick={() => setSelectedDeptFilter(dept)}
+                title={`Show ${dept} members`}
+                className={`text-left rounded-xl border p-3 transition-colors hover:bg-slate-50 ${
+                  managers.length === 0 ? 'border-amber-200 bg-amber-50/50' : 'border-slate-200'
+                } ${selectedDeptFilter === dept ? 'ring-2 ring-sky-500' : ''}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-slate-900 truncate">{dept}</span>
+                  <span className="text-[10px] text-slate-500 shrink-0">{staffCount} staff</span>
+                </div>
+                <p className="text-[11px] mt-1 truncate">
+                  {managers.length > 0 ? (
+                    <span className="text-indigo-700 font-medium">
+                      <Shield className="inline h-3 w-3 mr-0.5 -mt-0.5" />
+                      {managers.map(m => m.name).join(', ')}
+                    </span>
+                  ) : (
+                    <span className="text-amber-700 font-semibold">No manager assigned</span>
+                  )}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3">
@@ -405,6 +472,11 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${getRoleBadge(user.role)}`}>
                         {getRoleIcon(user.role)} {user.role}
                       </span>
+                      {user.status === 'DEACTIVATED' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-300">
+                          <Ban className="h-3 w-3" /> Deactivated
+                        </span>
+                      )}
                       {user.status === 'PENDING' && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                           <Clock className="h-3 w-3" /> Pending Acceptance
@@ -425,16 +497,14 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
 
                 {/* Role Elevation / Actions */}
                 <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                  {isAdmin && user.id !== currentUser.id && (
-                    <select
-                      value={user.role}
-                      onChange={e => handleRoleChange(user.id, e.target.value as User['role'])}
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-xs cursor-pointer"
+                  {isAdmin && (
+                    <button
+                      onClick={() => openEditUser(user)}
+                      className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs"
                     >
-                      <option value="STAFF">Staff</option>
-                      <option value="MANAGER">Manager</option>
-                      <option value="ADMIN">Admin</option>
-                    </select>
+                      <Pencil className="h-3 w-3" />
+                      Edit
+                    </button>
                   )}
 
                   <span className="text-[10px] text-slate-400 font-mono">
@@ -446,6 +516,121 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
           </div>
         )}
       </div>
+
+      {/* Edit User Modal (admins only) */}
+      {editingUser && (() => {
+        const isSelf = editingUser.id === currentUser.id;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+            <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-slate-50">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 truncate">Edit {editingUser.name}</h3>
+                  <p className="text-[11px] text-slate-500 truncate">{editingUser.email}</p>
+                </div>
+                <button
+                  onClick={() => setEditingUser(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+                {/* Role */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">Role</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['STAFF', 'MANAGER', 'ADMIN'] as const).map(r => (
+                      <button
+                        key={r}
+                        type="button"
+                        disabled={isSelf}
+                        onClick={() => setEditForm(f => ({ ...f, role: r }))}
+                        className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                          editForm.role === r
+                            ? 'border-sky-500 bg-sky-50 text-sky-900 ring-1 ring-sky-500'
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {getRoleIcon(r)} {r}
+                      </button>
+                    ))}
+                  </div>
+                  {isSelf && <p className="text-[11px] text-slate-500">You can&apos;t change your own role.</p>}
+                </div>
+
+                {/* Department */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">
+                    Department {editForm.role === 'MANAGER' && <span className="text-rose-600">*</span>}
+                  </label>
+                  <select
+                    value={editForm.department}
+                    onChange={e => setEditForm(f => ({ ...f, department: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  >
+                    {!editForm.department && <option value="">Select a department…</option>}
+                    {DEPARTMENTS.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                  {editForm.role === 'MANAGER' && (
+                    <p className="text-[11px] text-slate-500">
+                      Managers see meetings and review work for this department only.
+                    </p>
+                  )}
+                </div>
+
+                {/* Account status */}
+                <div className="flex items-center justify-between rounded-xl border border-slate-200 p-3">
+                  <div>
+                    <p className="text-xs font-bold text-slate-700">Account active</p>
+                    <p className="text-[11px] text-slate-500">
+                      {editForm.active ? 'Can sign in and use the workspace.' : 'Sign-in blocked; history is kept.'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={editForm.active}
+                    aria-label="Account active"
+                    disabled={isSelf}
+                    onClick={() => setEditForm(f => ({ ...f, active: !f.active }))}
+                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                      editForm.active ? 'bg-emerald-500' : 'bg-slate-300'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                        editForm.active ? 'left-[22px]' : 'left-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setEditingUser(null)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingEdit}
+                    className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-md disabled:opacity-50"
+                  >
+                    {savingEdit && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span>{savingEdit ? 'Saving...' : 'Save changes'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Staff Onboarding Modal */}
       {isModalOpen && (

@@ -256,7 +256,12 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <div className="hidden md:flex flex-col text-left">
                 <span className="text-xs font-bold text-slate-800 leading-none">{currentUser.name}</span>
-                <span className="text-[10px] text-slate-500 font-medium">{currentUser.department || currentUser.role}</span>
+                <span className="flex items-center gap-1 text-[10px] text-slate-500 font-medium mt-0.5">
+                  <span className={`px-1 rounded text-[9px] font-bold uppercase tracking-wider ${getRoleBadgeStyle(currentUser.role)}`}>
+                    {currentUser.role}
+                  </span>
+                  {currentUser.department && <span className="truncate max-w-[120px]">{currentUser.department}</span>}
+                </span>
               </div>
               <ChevronDown className="h-3.5 w-3.5 text-slate-400 hidden md:inline" />
             </button>

@@ -6,11 +6,7 @@ import { createClient } from '@/lib/supabase';
 import { getAppUrl } from '@/lib/url';
 import { Zap, Mail, Lock, Eye, EyeOff, User, Building2, ArrowRight, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-
-const DEPARTMENTS = [
-  'Engineering', 'Programs', 'Finance', 'Communications', 'Monitoring & Evaluation',
-  'Operations', 'Human Resources', 'Research', 'Executive Office', 'Field Operations'
-];
+import { DEPARTMENTS } from '@/lib/departments';
 
 export default function RegisterPage() {
   const router = useRouter();
