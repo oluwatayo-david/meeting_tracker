@@ -138,7 +138,11 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
             tempPassword: data.tempPassword,
             loginUrl: `${origin}/login?email=${encodeURIComponent(form.email.trim().toLowerCase())}`,
           });
-          onShowToast(`Staff member provisioned: ${form.name}`, 'success');
+          if (data.emailSent) {
+            onShowToast(`${form.name} provisioned — login details emailed to ${form.email.trim().toLowerCase()}`, 'success');
+          } else {
+            onShowToast(`${form.name} provisioned, but the welcome email could not be sent${data.emailError ? ` (${data.emailError})` : ''}. Share the credentials below manually.`, 'error');
+          }
         } else {
           onShowToast(`Invitation email sent to ${form.email}`, 'success');
           setIsModalOpen(false);

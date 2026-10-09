@@ -298,13 +298,15 @@ export const ActionItemsView: React.FC<ActionItemsViewProps> = ({
                       >
                         <Edit2 className="h-3.5 w-3.5" />
                       </button>
-                      <button
-                        onClick={() => setDeletingItem(item)}
-                        title="Delete action item"
-                        className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      {isManager && (
+                        <button
+                          onClick={() => setDeletingItem(item)}
+                          title="Delete action item"
+                          className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </>
                   )}
                 </div>

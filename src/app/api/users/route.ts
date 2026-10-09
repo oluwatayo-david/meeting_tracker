@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { dbGetUsers, dbInviteUser, dbOnboardUser, dbUpdateUserRole, dbUpsertUser, getServiceClient } from '@/lib/supabase-db';
+import { createServerSupabaseClient, getSessionUser } from '@/lib/supabase-server';
+import { dbGetUsers, dbInviteUser, dbOnboardUser, dbUpdateOwnProfile, dbUpdateUserRole, dbUpsertUser, getServiceClient } from '@/lib/supabase-db';
+import { rateLimitResponse } from '@/lib/rate-limit';
+import { sendEmail, staffWelcomeEmail } from '@/lib/email';
+import { getAppUrl } from '@/lib/url';
 
 /**
  * GET /api/users
- * Returns list of all users (ADMIN/MANAGER only via middleware)
+ * Returns the user directory (any signed-in user — needed to pick meeting attendees)
  */
 export async function GET() {
   try {
+    if (!(await getSessionUser())) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
     const users = await dbGetUsers();
     return NextResponse.json({ users });
   } catch (err: unknown) {
@@ -35,24 +41,53 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { action } = body;
 
-    // Sync/upsert the current user's own profile (called on login)
-    if (action === 'upsert_profile') {
-      const { id, name, email, role, department, avatarUrl } = body;
-      const updated = await dbUpsertUser({ id, name, email, role, department, avatarUrl });
-      return NextResponse.json({ user: updated });
-    }
-
-    // Get calling user's role from DB (fallback to auth metadata)
     const adminClient = getServiceClient();
     const { data: callerProfile } = await adminClient
       .from('users')
-      .select('role')
+      .select('role, name, department')
       .eq('id', user.id)
       .maybeSingle();
-    const callerRole = (callerProfile as Record<string, string>)?.role || (user.user_metadata?.role as string) || 'STAFF';
+    const profile = callerProfile as Record<string, string> | null;
+
+    // Sync the caller's OWN profile (called on login). The id comes from the
+    // session. Role, department and email are never set here — department
+    // decides which meetings a user can see, so only admins change it.
+    if (action === 'upsert_profile') {
+      const { name, avatarUrl } = body;
+      if (profile) {
+        const updated = await dbUpdateOwnProfile(user.id, { name, avatarUrl });
+        return NextResponse.json({ user: updated });
+      }
+      // First login with no profile row yet: create it as STAFF, using the
+      // department chosen at sign-up (stored server-side in auth metadata).
+      const created = await dbUpsertUser({
+        id: user.id,
+        email: user.email || '',
+        name,
+        role: 'STAFF',
+        department: (user.user_metadata?.department as string) || '',
+        avatarUrl,
+      });
+      return NextResponse.json({ user: created });
+    }
+
+    const callerRole = profile?.role || 'STAFF';
+    const callerName = profile?.name || 'Your administrator';
+    const callerDepartment = profile?.department || '';
 
     if (callerRole !== 'ADMIN' && callerRole !== 'MANAGER') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
+    if (action === 'onboard' || action === 'invite') {
+      // Managers may only add staff to their own department
+      if (callerRole === 'MANAGER' && body.department && body.department !== callerDepartment) {
+        return NextResponse.json({ error: 'Managers can only add staff to their own department' }, { status: 403 });
+      }
+      if (callerRole === 'MANAGER') body.department = callerDepartment;
+
+      const limited = await rateLimitResponse('provision', user.id);
+      if (limited) return limited;
     }
 
     // Onboard a new staff member (Direct provisioning with credentials)
@@ -75,7 +110,23 @@ export async function POST(req: Request) {
       if (!result.success) {
         return NextResponse.json({ error: result.message }, { status: 400 });
       }
-      return NextResponse.json(result, { status: 201 });
+
+      const normalizedEmail = email.trim().toLowerCase();
+      const emailResult = await sendEmail(staffWelcomeEmail({
+        to: normalizedEmail,
+        name: name.trim(),
+        role,
+        department: department || '',
+        tempPassword: result.tempPassword!,
+        loginUrl: `${getAppUrl(req)}/login?email=${encodeURIComponent(normalizedEmail)}`,
+        provisionedByName: callerName,
+      }));
+
+      return NextResponse.json({
+        ...result,
+        emailSent: emailResult.success,
+        emailError: emailResult.error,
+      }, { status: 201 });
     }
 
     // Invite a new user via email

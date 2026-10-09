@@ -41,7 +41,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', supabaseUserId)
         .maybeSingle();
       if (!error && data) {
-        setAppUser(data as User);
+        // Map the snake_case row to the camelCase User shape
+        const row = data as Record<string, unknown>;
+        setAppUser({
+          id: row.id as string,
+          name: (row.name as string) || (row.email as string)?.split('@')[0] || 'User',
+          email: (row.email as string) || '',
+          role: (row.role as User['role']) || 'STAFF',
+          department: (row.department as string) || '',
+          avatarUrl: (row.avatar_url as string) || undefined,
+          createdAt: (row.created_at as string) || new Date().toISOString(),
+        });
       }
     } catch (err) {
       console.warn('[AuthProvider] fetchAppUser error:', err);

@@ -1,10 +1,29 @@
 import { NextResponse } from 'next/server';
 import { generateActionCoPilotAdvice, refineActionPoint } from '@/lib/gemini';
-import { dbUpdateActionItemAiGuidance } from '@/lib/supabase-db';
+import { dbUpdateActionItemAiGuidance, dbGetActionItemById, dbGetMeetingById } from '@/lib/supabase-db';
+import { getSessionUser } from '@/lib/supabase-server';
+import { canViewActionItem } from '@/lib/authz';
+import { rateLimitResponse } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
   try {
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const limited = await rateLimitResponse('ai', sessionUser.id);
+    if (limited) return limited;
+
     const { actionItemId, title, description, mode } = await req.json();
+
+    // Saving guidance onto an item requires access to that item
+    let canPersist = false;
+    if (actionItemId) {
+      const item = await dbGetActionItemById(actionItemId);
+      const meeting = item ? await dbGetMeetingById(item.meetingId) : null;
+      canPersist = !!item && canViewActionItem(sessionUser, item, meeting || undefined);
+    }
 
     if (!title) {
       return NextResponse.json({ error: 'Action item title is required' }, { status: 400 });
@@ -21,7 +40,7 @@ export async function POST(req: Request) {
     }
 
     // If actionItemId provided, update the item in DB
-    if (actionItemId) {
+    if (actionItemId && canPersist) {
       try {
         await dbUpdateActionItemAiGuidance(actionItemId, advice);
       } catch (dbErr) {

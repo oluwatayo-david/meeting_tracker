@@ -1,8 +1,18 @@
+
 import { NextResponse } from 'next/server';
 import { Meeting, ActionItem } from '@/types';
+import { getSessionUser } from '@/lib/supabase-server';
+import { rateLimitResponse } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
   try {
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+    const limited = await rateLimitResponse('export', sessionUser.id);
+    if (limited) return limited;
+
     const { meeting, actionItems }: { meeting: Meeting; actionItems: ActionItem[] } = await req.json();
 
     // pptxgenjs runs fine on the server (Node.js has fs)

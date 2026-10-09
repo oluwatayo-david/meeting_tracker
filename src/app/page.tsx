@@ -154,10 +154,20 @@ export default function Home() {
       });
       const result = await res.json();
       if (res.ok) {
-        showToast(
-          `Meeting "${data.title}" scheduled & invitations dispatched to attendees.`,
-          'success'
-        );
+        const inv = result.invitations as { sent: number; failed: string[] } | undefined;
+        if (inv && inv.failed.length > 0) {
+          showToast(
+            `Meeting "${data.title}" scheduled. ${inv.sent} invitation(s) sent; could not email: ${inv.failed.join(', ')}.`,
+            'error'
+          );
+        } else {
+          showToast(
+            inv && inv.sent > 0
+              ? `Meeting "${data.title}" scheduled & invitations emailed to ${inv.sent} attendee(s).`
+              : `Meeting "${data.title}" scheduled.`,
+            'success'
+          );
+        }
         await loadData();
       } else {
         showToast(result.error || 'Failed to create meeting', 'error');

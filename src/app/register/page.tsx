@@ -22,7 +22,6 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     department: '',
-    role: 'STAFF' as 'MANAGER' | 'STAFF',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -45,15 +44,16 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
       options: {
         emailRedirectTo: `${getAppUrl()}/auth/callback`,
+        // No role here: self-registered accounts are always STAFF. The
+        // on_auth_user_created trigger creates the profile row.
         data: {
           full_name: formData.fullName,
           department: formData.department,
-          role: formData.role,
         },
       },
     });
@@ -62,17 +62,6 @@ export default function RegisterPage() {
       setError(signUpError.message);
       setLoading(false);
       return;
-    }
-
-    // Create user profile in our users table
-    if (data.user) {
-      await supabase.from('users').upsert({
-        id: data.user.id,
-        name: formData.fullName,
-        email: formData.email,
-        role: formData.role,
-        department: formData.department,
-      });
     }
 
     setSuccess(true);

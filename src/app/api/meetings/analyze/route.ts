@@ -1,11 +1,40 @@
 import { NextResponse } from 'next/server';
 import { extractMeetingInsights, transcribeAudioData } from '@/lib/gemini';
-import { dbGetUsers, dbCreateActionItem, dbUpdateMeetingTranscriptAndSummary, dbGetMeetingById } from '@/lib/supabase-db';
+import { dbGetUserDirectory, dbCreateActionItem, dbUpdateMeetingTranscriptAndSummary, dbGetMeetingById, matchAssignee } from '@/lib/supabase-db';
+import { getSessionUser } from '@/lib/supabase-server';
+import { canViewMeeting } from '@/lib/authz';
+import { rateLimitResponse } from '@/lib/rate-limit';
 import { ActionItem } from '@/types';
+
+const MAX_AUDIO_BASE64_CHARS = 28_000_000; // ≈ 20 MB of audio
+const MAX_TRANSCRIPT_CHARS = 400_000;
 
 export async function POST(req: Request) {
   try {
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const limited = await rateLimitResponse('ai', sessionUser.id);
+    if (limited) return limited;
+
     const { meetingId, transcript, meetingTitle, participants, audioBase64, audioMimeType } = await req.json();
+
+    if (typeof audioBase64 === 'string' && audioBase64.length > MAX_AUDIO_BASE64_CHARS) {
+      return NextResponse.json({ error: 'Recording is too large to analyse (max ~20 MB)' }, { status: 413 });
+    }
+    if (typeof transcript === 'string' && transcript.length > MAX_TRANSCRIPT_CHARS) {
+      return NextResponse.json({ error: 'Transcript is too long to analyse' }, { status: 413 });
+    }
+
+    // Writing the transcript / action items requires access to that meeting
+    if (meetingId) {
+      const meeting = await dbGetMeetingById(meetingId);
+      if (!meeting || !canViewMeeting(sessionUser, meeting)) {
+        return NextResponse.json({ error: 'Meeting not found' }, { status: 404 });
+      }
+    }
 
     let finalTranscript = (transcript || '').trim();
 
@@ -35,20 +64,14 @@ export async function POST(req: Request) {
     }
 
     // Fetch real users from Supabase for matching
-    const users = await dbGetUsers();
+    const users = await dbGetUserDirectory();
     const participantEmails = (participants || []).map((p: { email: string }) => p.email.toLowerCase());
 
     const createdActionItems: ActionItem[] = [];
 
     for (const item of insights.actionItems || []) {
-      // Find matching user by name or participant email
-      const matchedUser =
-        users.find((u) =>
-          u.name.toLowerCase().includes(item.suggestedAssignee.toLowerCase()) ||
-          item.suggestedAssignee.toLowerCase().includes(u.name.toLowerCase().split(' ')[0])
-        ) ||
-        users.find((u) => participantEmails.includes(u.email.toLowerCase())) ||
-        users[0];
+      // Match by name; leave unassigned (for a manager to assign) rather than guess
+      const matchedUser = matchAssignee(users, item.suggestedAssignee, participantEmails);
 
       const dueDate = new Date(item.suggestedDueDate || Date.now() + 86400000 * 5).toISOString();
 
