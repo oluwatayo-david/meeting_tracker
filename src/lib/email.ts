@@ -1,13 +1,21 @@
 /**
  * email.ts
  * -------------------------------------------------------
- * Server-side transactional email (SMTP via Nodemailer).
- * Never import this from a client component — it reads SMTP secrets.
+ * Server-side transactional email. Never import this from a client component.
  *
- * Required env vars:
- *   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM
- * Optional:
- *   SMTP_SECURE ("true" for port 465), EMAIL_ORG_NAME, EMAIL_REPLY_TO, EMAIL_TIMEZONE
+ * Two transports — SMTP is used when configured, otherwise EmailJS:
+ *
+ *   SMTP (Nodemailer):  SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM
+ *                       optional SMTP_SECURE ("true" for port 465)
+ *
+ *   EmailJS REST API:   NEXT_PUBLIC_EMAILJS_SERVICE_ID, NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
+ *                       NEXT_PUBLIC_EMAILJS_PUBLIC_KEY, EMAILJS_PRIVATE_KEY (recommended)
+ *     The template must use: To Email = {{to_email}}, Subject = {{subject}},
+ *     Content = {{{message_html}}} (three braces so the HTML is not escaped).
+ *     In the EmailJS dashboard → Account → Security, enable
+ *     "Allow EmailJS API for non-browser applications".
+ *
+ * Optional for both: EMAIL_ORG_NAME, EMAIL_REPLY_TO, EMAIL_TIMEZONE
  */
 
 import nodemailer, { type Transporter } from 'nodemailer';
@@ -16,11 +24,51 @@ import { getAppUrl } from '@/lib/url';
 
 const ORG_NAME = process.env.EMAIL_ORG_NAME || 'SCIDaR ActionAI Workspace';
 const BRAND_COLOR = '#4f46e5';
+const EMAILJS_ENDPOINT = 'https://api.emailjs.com/api/v1.0/email/send';
+const EMAILJS_MIN_GAP_MS = 1100; // EmailJS accepts ~1 request per second
 
 let transporter: Transporter | null = null;
 
-export function isEmailConfigured(): boolean {
+function isSmtpConfigured(): boolean {
   return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && process.env.EMAIL_FROM);
+}
+
+function isEmailJsConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID &&
+    process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID &&
+    process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY
+  );
+}
+
+export function isEmailConfigured(): boolean {
+  return isSmtpConfigured() || isEmailJsConfigured();
+}
+
+async function sendViaEmailJs(message: EmailMessage): Promise<void> {
+  const res = await fetch(EMAILJS_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      service_id: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
+      template_id: process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
+      user_id: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY,
+      accessToken: process.env.EMAILJS_PRIVATE_KEY || undefined,
+      template_params: {
+        to_email: message.to,
+        email: message.to,
+        subject: message.subject,
+        message_html: message.html,
+        message: message.text,
+        from_name: ORG_NAME,
+        reply_to: process.env.EMAIL_REPLY_TO || '',
+      },
+    }),
+  });
+  if (!res.ok) {
+    const detail = (await res.text().catch(() => '')).slice(0, 300);
+    throw new Error(`EmailJS ${res.status}: ${detail || res.statusText}`);
+  }
 }
 
 function getTransporter(): Transporter {
@@ -45,15 +93,19 @@ export interface EmailMessage {
 
 export async function sendEmail(message: EmailMessage): Promise<{ success: boolean; error?: string }> {
   if (!isEmailConfigured()) {
-    console.warn('[Email] SMTP is not configured — skipped email to', message.to);
+    console.warn('[Email] No email transport configured (SMTP or EmailJS) — skipped email to', message.to);
     return { success: false, error: 'Email service is not configured' };
   }
   try {
-    await getTransporter().sendMail({
-      from: process.env.EMAIL_FROM,
-      replyTo: process.env.EMAIL_REPLY_TO || undefined,
-      ...message,
-    });
+    if (isSmtpConfigured()) {
+      await getTransporter().sendMail({
+        from: process.env.EMAIL_FROM,
+        replyTo: process.env.EMAIL_REPLY_TO || undefined,
+        ...message,
+      });
+    } else {
+      await sendViaEmailJs(message);
+    }
     return { success: true };
   } catch (err) {
     const error = err instanceof Error ? err.message : 'Unknown email error';
@@ -64,7 +116,17 @@ export async function sendEmail(message: EmailMessage): Promise<{ success: boole
 
 /** Sends to many recipients independently so one bad address doesn't block the rest. */
 export async function sendBulkEmail(messages: EmailMessage[]): Promise<{ sent: number; failed: string[] }> {
-  const results = await Promise.all(messages.map(m => sendEmail(m)));
+  let results: { success: boolean }[];
+  if (isSmtpConfigured()) {
+    results = await Promise.all(messages.map(m => sendEmail(m)));
+  } else {
+    // EmailJS rejects bursts, so send one at a time
+    results = [];
+    for (const [i, m] of messages.entries()) {
+      if (i > 0) await new Promise(r => setTimeout(r, EMAILJS_MIN_GAP_MS));
+      results.push(await sendEmail(m));
+    }
+  }
   const failed = messages.filter((_, i) => !results[i].success).map(m => m.to);
   return { sent: messages.length - failed.length, failed };
 }
