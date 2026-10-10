@@ -156,7 +156,7 @@ export const Teams: React.FC = () => {
               </div>
 
               <div className="relative mt-12">
-                <div className="pointer-events-none absolute -inset-x-10 -inset-y-6 rounded-[3rem] bg-gradient-to-br from-sky-100 via-wash to-indigo-100 blur-2xl" />
+                <div className="pointer-events-none absolute -inset-x-3 -inset-y-6 rounded-[3rem] sm:-inset-x-10 bg-gradient-to-br from-sky-100 via-wash to-indigo-100 blur-2xl" />
                 <div className="relative rounded-[1.4rem] bg-gradient-to-b from-white to-wash p-1.5 shadow-float ring-1 ring-line sm:p-2">
                   <div className="overflow-hidden rounded-2xl ring-1 ring-ink/10">
                     <ScaledScreen width={1280} height={800} compactWidth={760} compactHeight={1080} label={role.screenLabel}>
