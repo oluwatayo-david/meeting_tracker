@@ -1,4 +1,4 @@
-/** Product naming — change it here and it updates across the app and emails. */
+/** Product naming — change it here and it updates across every app and email. */
 export const APP_NAME = 'SyncLog';
 export const APP_TAGLINE = 'From meeting to done';
 export const APP_DESCRIPTION =

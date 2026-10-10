@@ -1,0 +1,5 @@
+{
+  "extends": "@synclog/typescript-config/nextjs.json",
+  "compilerOptions": { "incremental": false, "plugins": [] },
+  "include": ["src"]
+}

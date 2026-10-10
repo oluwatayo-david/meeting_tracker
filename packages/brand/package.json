@@ -1,0 +1,21 @@
+{
+  "name": "@synclog/brand",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./mark": "./src/brand-mark.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@synclog/typescript-config": "*",
+    "@types/react": "^19.0.8",
+    "typescript": "^5.7.3"
+  }
+}

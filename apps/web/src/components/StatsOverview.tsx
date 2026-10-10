@@ -7,12 +7,12 @@ import {
   Clock, 
   AlertTriangle, 
   FileCheck2, 
-  Send, 
-  Sparkles, 
+  Send,
   TrendingUp,
   ArrowUpRight
 } from 'lucide-react';
 import { APP_NAME, COPILOT_NAME } from '@/lib/brand';
+import { BrandMark } from '@/components/BrandMark';
 
 interface StatsOverviewProps {
   actionItems: ActionItem[];
@@ -47,7 +47,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-sky-400/15 border border-sky-400/20 px-3 py-1 text-xs font-semibold text-sky-300">
-              <Sparkles className="h-3.5 w-3.5 text-sky-400" />
+              <BrandMark className="h-3.5 w-3.5 text-sky-400" />
               {APP_NAME}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">

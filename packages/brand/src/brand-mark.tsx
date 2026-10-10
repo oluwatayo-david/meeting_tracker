@@ -3,7 +3,7 @@ import React from 'react';
 /**
  * Product logo: a conversation bubble (the meeting) carrying a checkmark (the
  * action followed through). Inherits colour from `currentColor`; size via className.
- * Keep in sync with src/app/icon.svg (the favicon).
+ * Keep in sync with each app's src/app/icon.svg (the favicon).
  */
 export const BrandMark: React.FC<{ className?: string }> = ({ className }) => (
   <svg

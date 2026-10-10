@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Workspace packages ship TypeScript source; let Next compile them.
+  transpilePackages: ["@synclog/brand"],
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // pptxgenjs uses node built-ins — stub them out in the browser bundle
