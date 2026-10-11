@@ -31,7 +31,7 @@ interface NewMeetingModalProps {
     department?: string;
     transcript: string;
     participants: { name: string; email: string; type: 'INTERNAL' | 'EXTERNAL'; userId?: string }[];
-  }) => Promise<void>;
+  }) => void;  // void — parent closes the modal and handles async
 }
 
 export const NewMeetingModal: React.FC<NewMeetingModalProps> = ({
@@ -94,51 +94,51 @@ export const NewMeetingModal: React.FC<NewMeetingModalProps> = ({
     setCustomParticipants(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
     setIsProcessing(true);
-    try {
-      // Build selected internal participants from DB users
-      const selectedDbParticipants = availableUsers
-        .filter(u => selectedUserIds.includes(u.id))
-        .map(u => ({
-          name: u.name,
-          email: u.email,
-          userId: u.id,
-          type: 'INTERNAL' as const,
-        }));
 
-      // Merge with custom invitees
-      const allParticipants = [
-        ...selectedDbParticipants,
-        ...customParticipants,
-      ];
+    // Build selected internal participants from DB users
+    const selectedDbParticipants = availableUsers
+      .filter(u => selectedUserIds.includes(u.id))
+      .map(u => ({
+        name: u.name,
+        email: u.email,
+        userId: u.id,
+        type: 'INTERNAL' as const,
+      }));
 
-      // Ensure at least currentUser is included
-      if (!allParticipants.some(p => p.email === currentUser.email)) {
-        allParticipants.unshift({
-          name: currentUser.name,
-          email: currentUser.email,
-          userId: currentUser.id,
-          type: 'INTERNAL' as const,
-        });
-      }
+    // Merge with custom invitees
+    const allParticipants = [
+      ...selectedDbParticipants,
+      ...customParticipants,
+    ];
 
-      await onCreateMeeting({
-        title: title.trim(),
-        description: description.trim(),
-        meetingType,
-        meetingDate: new Date(meetingDate).toISOString(),
-        department,
-        transcript: '', // AI transcription runs inside the live meeting session
-        participants: allParticipants,
+    // Ensure at least currentUser is included
+    if (!allParticipants.some(p => p.email === currentUser.email)) {
+      allParticipants.unshift({
+        name: currentUser.name,
+        email: currentUser.email,
+        userId: currentUser.id,
+        type: 'INTERNAL' as const,
       });
-      onClose();
-    } finally {
-      setIsProcessing(false);
     }
+
+    // Parent handles closing + async fetch — we just fire and reset
+    onCreateMeeting({
+      title: title.trim(),
+      description: description.trim(),
+      meetingType,
+      meetingDate: new Date(meetingDate).toISOString(),
+      department,
+      transcript: '',
+      participants: allParticipants,
+    });
+
+    // Reset local state (modal will be unmounted by parent almost immediately)
+    setIsProcessing(false);
   };
 
   return (

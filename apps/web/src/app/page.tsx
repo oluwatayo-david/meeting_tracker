@@ -98,6 +98,12 @@ export default function Home() {
     window.location.href = '/login';
   };
 
+  const [isMeetingCreating, setIsMeetingCreating] = useState(false);
+
+  /**
+   * Fire-and-forget: closes the modal immediately, then creates the meeting
+   * and refreshes data in the background. A toast reports the outcome.
+   */
   const handleCreateMeeting = async (data: {
     title: string;
     description: string;
@@ -106,6 +112,10 @@ export default function Home() {
     participants: { name: string; email: string; type: 'INTERNAL' | 'EXTERNAL'; userId?: string }[];
   }) => {
     if (!currentUser) return;
+    // Close the modal right away so the user isn't blocked
+    setIsNewMeetingOpen(false);
+    setIsMeetingCreating(true);
+    showToast(`Creating meeting "${data.title}"…`, 'success');
     try {
       const res = await fetch('/api/meetings', {
         method: 'POST',
@@ -127,8 +137,8 @@ export default function Home() {
         } else {
           showToast(
             inv && inv.sent > 0
-              ? `Meeting "${data.title}" scheduled & invitations emailed to ${inv.sent} attendee(s).`
-              : `Meeting "${data.title}" scheduled.`,
+              ? `✅ Meeting "${data.title}" scheduled & invitations emailed to ${inv.sent} attendee(s).`
+              : `✅ Meeting "${data.title}" scheduled.`,
             'success'
           );
         }
@@ -138,6 +148,8 @@ export default function Home() {
       }
     } catch {
       showToast('Error communicating with server', 'error');
+    } finally {
+      setIsMeetingCreating(false);
     }
   };
 
@@ -558,7 +570,10 @@ export default function Home() {
           currentUser={currentUser}
           users={users}
           onClose={() => setIsNewMeetingOpen(false)}
-          onCreateMeeting={handleCreateMeeting}
+          onCreateMeeting={(data) => {
+            // Fire-and-forget — modal stays closed while the request runs in background
+            void handleCreateMeeting(data);
+          }}
         />
       )}
 
@@ -584,6 +599,14 @@ export default function Home() {
           actionItem={auditItem}
           onClose={() => setAuditItem(null)}
         />
+      )}
+
+      {/* Background meeting creation indicator */}
+      {isMeetingCreating && (
+        <div className="fixed bottom-20 right-6 z-50 flex items-center gap-2.5 rounded-2xl bg-indigo-600 text-white px-4 py-2.5 shadow-2xl text-xs font-medium animate-in slide-in-from-bottom duration-300">
+          <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+          <span>Creating meeting in background…</span>
+        </div>
       )}
 
       {/* Toast Notification */}
