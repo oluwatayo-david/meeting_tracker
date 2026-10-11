@@ -186,7 +186,7 @@ export function MeetingLiveView({ meeting, currentUser, onClose, onMeetingUpdate
         >
           {isExternal ? (
             <>
-              <Globe className="h-3.5 w-3.5" /> External meeting — all department members can see this meeting and its summary
+              <Globe className="h-3.5 w-3.5" /> External meeting — all project members can see this meeting and its summary
             </>
           ) : (
             <>

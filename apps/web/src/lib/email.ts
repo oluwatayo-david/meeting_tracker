@@ -47,6 +47,7 @@ export function isEmailConfigured(): boolean {
 }
 
 async function sendViaEmailJs(message: EmailMessage): Promise<void> {
+  console.log(`[EmailJS] Sending request to EmailJS endpoint for recipient: ${message.to}`);
   const res = await fetch(EMAILJS_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -58,6 +59,11 @@ async function sendViaEmailJs(message: EmailMessage): Promise<void> {
       template_params: {
         to_email: message.to,
         email: message.to,
+        to: message.to,
+        recipient: message.to,
+        recipient_email: message.to,
+        user_email: message.to,
+        to_name: message.to.split('@')[0],
         subject: message.subject,
         message_html: message.html,
         message: message.text,
@@ -98,6 +104,7 @@ export async function sendEmail(message: EmailMessage): Promise<{ success: boole
     return { success: false, error: 'Email service is not configured' };
   }
   try {
+    console.log(`[Email] Dispatching email to: "${message.to}" | Subject: "${message.subject}"`);
     if (isSmtpConfigured()) {
       await getTransporter().sendMail({
         from: process.env.EMAIL_FROM,
@@ -107,6 +114,7 @@ export async function sendEmail(message: EmailMessage): Promise<{ success: boole
     } else {
       await sendViaEmailJs(message);
     }
+    console.log(`[Email] Successfully delivered email to: "${message.to}"`);
     return { success: true };
   } catch (err) {
     const error = err instanceof Error ? err.message : 'Unknown email error';
@@ -216,7 +224,7 @@ export function meetingInvitationEmail(params: {
     ['Type', type],
     ['Organised by', params.organizerName],
   ];
-  if (params.department) rows.push(['Department', params.department]);
+  if (params.department) rows.push(['Project', params.department]);
 
   const body = [
     paragraph(`Dear ${escapeHtml(params.recipientName)},`),
@@ -359,12 +367,12 @@ export function staffWelcomeEmail(params: {
   loginUrl: string;
   provisionedByName: string;
 }): EmailMessage {
-  const roleLabel = params.role.charAt(0) + params.role.slice(1).toLowerCase();
+  const roleLabel = params.role === 'ADMIN' ? 'Principal' : params.role === 'MANAGER' ? 'Project Manager' : 'Staff';
   const rows: [string, string][] = [
     ['Login email', params.to],
     ['Temporary password', params.tempPassword],
     ['Role', roleLabel],
-    ['Department', params.department || '—'],
+    ['Project', params.department || '—'],
   ];
 
   const body = [
@@ -405,4 +413,103 @@ export function staffWelcomeEmail(params: {
     }),
     text,
   };
+}
+
+export function actionItemAssignedEmail(params: {
+  to: string;
+  recipientName: string;
+  assignedByName: string;
+  itemTitle: string;
+  itemDescription?: string;
+  meetingTitle?: string;
+  project?: string;
+  dueDate: string;
+  priority: string;
+  aiGuidance?: string;
+  appUrl: string;
+}): EmailMessage {
+  const due = new Date(params.dueDate);
+  const dueLabel = Number.isNaN(due.getTime())
+    ? 'Not set'
+    : due.toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: process.env.EMAIL_TIMEZONE || 'Africa/Lagos',
+      });
+  const titleCase = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, ' ');
+  const rows: [string, string][] = [
+    ['Action Point', params.itemTitle],
+    ['Due Date', dueLabel],
+    ['Priority', titleCase(params.priority)],
+    ['Assigned By', params.assignedByName],
+  ];
+  if (params.meetingTitle) rows.push(['From Meeting', params.meetingTitle]);
+  if (params.project) rows.push(['Project', params.project]);
+
+  const body = [
+    paragraph(`Dear ${escapeHtml(params.recipientName)},`),
+    paragraph(`A new task/action point has been assigned to you by <strong>${escapeHtml(params.assignedByName)}</strong>. Please review the details below:`),
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 18px;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">${detailRows(rows)}</table>`,
+    params.itemDescription
+      ? paragraph(`<strong>Deliverable Details:</strong><br>${escapeHtml(params.itemDescription).replace(/\n/g, '<br>')}`)
+      : '',
+    params.aiGuidance
+      ? paragraph(`<strong>AI Guidance / Recommended Steps:</strong><br><span style="color:#4f46e5;">${escapeHtml(params.aiGuidance).replace(/\n/g, '<br>')}</span>`)
+      : '',
+    paragraph('You can track your timeline, generate execution plans using the AI Co-Pilot, and submit your proof of work directly in your workspace.'),
+    paragraph('Kind regards,<br>' + escapeHtml(ORG_NAME)),
+  ].join('');
+
+  const text = [
+    `Dear ${params.recipientName},`,
+    '',
+    `A new action point has been assigned to you by ${params.assignedByName}:`,
+    '',
+    ...rows.map(([l, v]) => `${l}: ${v}`),
+    ...(params.itemDescription ? ['', `Deliverable Details: ${params.itemDescription}`] : []),
+    ...(params.aiGuidance ? ['', `AI Guidance: ${params.aiGuidance}`] : []),
+    '',
+    `View and complete your task here: ${params.appUrl}`,
+    '',
+    'Kind regards,',
+    ORG_NAME,
+  ].join('\n');
+
+  return {
+    to: params.to,
+    subject: `New Task Assigned: ${params.itemTitle} — due ${dueLabel}`,
+    html: layout({
+      preheader: `You have been assigned: "${params.itemTitle}", due ${dueLabel}.`,
+      heading: 'New Action Point Assigned',
+      body,
+      ctaLabel: 'Open My Tasks',
+      ctaUrl: params.appUrl,
+    }),
+    text,
+  };
+}
+
+export async function sendTaskAssignedEmail(params: {
+  to: string;
+  recipientName: string;
+  assignedByName: string;
+  itemTitle: string;
+  itemDescription?: string;
+  meetingTitle?: string;
+  project?: string;
+  dueDate: string;
+  priority: string;
+  aiGuidance?: string;
+  appUrl: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const msg = actionItemAssignedEmail(params);
+    return await sendEmail(msg);
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Unknown email error';
+    console.error('[Email] Failed to send task assignment notification to', params.to, error);
+    return { success: false, error };
+  }
 }

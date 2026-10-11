@@ -461,12 +461,12 @@ export const MeetingsView: React.FC<MeetingsViewProps> = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-700">Department</label>
+                <label className="font-semibold text-slate-700">Project</label>
                 <input
                   type="text"
                   value={editDepartment}
                   onChange={(e) => setEditDepartment(e.target.value)}
-                  placeholder="e.g. Engineering, Sales, Executive"
+                  placeholder="e.g. Vaccine Financing, Innovation, Spark"
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>

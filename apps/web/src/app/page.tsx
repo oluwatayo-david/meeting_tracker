@@ -540,7 +540,7 @@ export default function Home() {
                 />
               )}
 
-              {/* Staff Onboarding & Team Admin Panel — MANAGER and ADMIN */}
+              {/* Staff Onboarding & Team Workspace — MANAGER and PRINCIPAL */}
               {activeTab === 'admin' && isManager && (
                 <AdminPanelView
                   currentUser={currentUser}

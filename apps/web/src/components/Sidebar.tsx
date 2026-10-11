@@ -107,10 +107,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }] : []),
     ...(isManager ? [{
       id: 'admin' as TabId,
-      label: isAdmin ? 'Admin & Team' : 'Staff Onboarding',
+      label: isAdmin ? 'Principal & Team' : 'Staff Onboarding',
       icon: Users,
       badge: null,
-      description: isAdmin ? 'Manage organization staff & roles' : 'Onboard & manage department staff',
+      description: isAdmin ? 'Manage organization staff & roles' : 'Onboard & manage project staff',
       roleRequired: 'MANAGER',
     }] : []),
   ];
@@ -293,7 +293,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <p className="text-xs font-bold text-white truncate max-w-[110px]">{currentUser.name}</p>
                     <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${getRoleBadgeStyle(currentUser.role)}`}>
-                      {currentUser.role}
+                      {currentUser.role === 'ADMIN' ? 'PRINCIPAL' : currentUser.role}
                     </span>
                   </div>
                   <p className="text-[10px] text-slate-400 truncate">{currentUser.email}</p>
@@ -307,7 +307,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {isAdmin && (
                   <button
                     onClick={() => onSelectTab('admin')}
-                    title="Admin Settings"
+                    title="Principal Settings"
                     className="text-slate-400 hover:text-sky-400 p-1 rounded-lg hover:bg-slate-800 transition-colors"
                   >
                     <Settings className="h-3.5 w-3.5" />
@@ -326,7 +326,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ) : (
           <div className="flex flex-col items-center gap-2 py-1">
             <div
-              title={`${currentUser.name} — ${currentUser.role}`}
+              title={`${currentUser.name} — ${currentUser.role === 'ADMIN' ? 'PRINCIPAL' : currentUser.role}`}
               className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-xs font-bold text-white shadow-sm ring-2 ring-slate-800 cursor-pointer"
               onClick={onToggleCollapse}
             >

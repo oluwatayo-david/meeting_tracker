@@ -36,7 +36,7 @@ export default function RegisterPage() {
       return;
     }
     if (!formData.department) {
-      setError('Please select your department');
+      setError('Please select your project');
       return;
     }
     setLoading(true);
@@ -114,7 +114,7 @@ export default function RegisterPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/30 mb-4">
             <BrandMark className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Join Your Department</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Join Your Project</h1>
           <p className="text-slate-400 mt-1.5 text-sm">Create your {APP_NAME} account</p>
         </div>
 
@@ -152,9 +152,9 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Department */}
+            {/* Project */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-300">Department</label>
+              <label className="text-xs font-medium text-slate-300">Project</label>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                 <select
@@ -163,7 +163,7 @@ export default function RegisterPage() {
                   required
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 pl-9 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all appearance-none"
                 >
-                  <option value="" className="bg-slate-900">Select Department...</option>
+                  <option value="" className="bg-slate-900">Select Project...</option>
                   {DEPARTMENTS.map((d) => (
                     <option key={d} value={d} className="bg-slate-900">{d}</option>
                   ))}

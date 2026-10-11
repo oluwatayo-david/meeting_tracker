@@ -82,7 +82,7 @@ export const ManagerPortalView: React.FC<ManagerPortalViewProps> = ({
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Strict verification authority: Only managers and admins can approve or request revisions for submitted action deliverables.
+            Strict verification authority: Only managers and principals can approve or request revisions for submitted action deliverables.
           </p>
         </div>
 

@@ -3,6 +3,8 @@ import { dbGetActionItemById, dbUpdateActionItem, dbDeleteActionItem, dbGetMeeti
 import { getSessionUser } from '@/lib/supabase-server';
 import { ASSIGNEE_SETTABLE_STATUSES, canManageMeeting, canViewActionItem, isAssignee } from '@/lib/authz';
 import { ActionItem } from '@/types';
+import { sendTaskAssignedEmail } from '@/lib/email';
+import { getAppUrl } from '@/lib/url';
 
 /** Fields other than status that the request would actually change. */
 function changedDetailFields(item: ActionItem, body: Record<string, unknown>): string[] {
@@ -68,6 +70,26 @@ export async function PATCH(
         status: body.status,
         aiGuidance: body.aiGuidance,
       });
+
+      const assigneeChanged = (body.assigneeId !== undefined && body.assigneeId !== item.assigneeId) ||
+                              (body.assigneeEmail !== undefined && body.assigneeEmail !== item.assigneeEmail);
+
+      if (assigneeChanged && updated.assigneeEmail) {
+        void sendTaskAssignedEmail({
+          to: updated.assigneeEmail,
+          recipientName: updated.assigneeName || updated.assigneeEmail.split('@')[0],
+          assignedByName: sessionUser.name,
+          itemTitle: updated.title,
+          itemDescription: updated.description,
+          meetingTitle: meeting.title,
+          project: meeting.department,
+          dueDate: updated.dueDate,
+          priority: updated.priority,
+          aiGuidance: updated.aiGuidance,
+          appUrl: `${getAppUrl(req)}?view=actions`,
+        }).catch(err => console.warn('[ActionItem PATCH] Assignment email failed:', err));
+      }
+
       return NextResponse.json({ actionItem: updated });
     }
 

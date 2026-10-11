@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { dbGetActionItems, dbCreateActionItem, dbGetMeetingById } from '@/lib/supabase-db';
 import { getSessionUser } from '@/lib/supabase-server';
 import { canManageMeeting } from '@/lib/authz';
+import { sendTaskAssignedEmail } from '@/lib/email';
+import { getAppUrl } from '@/lib/url';
 
 export async function GET(req: Request) {
   try {
@@ -58,6 +60,22 @@ export async function POST(req: Request) {
       priority: priority || 'MEDIUM',
       aiGuidance: aiGuidance || undefined,
     });
+
+    if (actionItem.assigneeEmail) {
+      void sendTaskAssignedEmail({
+        to: actionItem.assigneeEmail,
+        recipientName: actionItem.assigneeName || actionItem.assigneeEmail.split('@')[0],
+        assignedByName: sessionUser.name,
+        itemTitle: actionItem.title,
+        itemDescription: actionItem.description,
+        meetingTitle: meeting.title,
+        project: meeting.department,
+        dueDate: actionItem.dueDate,
+        priority: actionItem.priority,
+        aiGuidance: actionItem.aiGuidance,
+        appUrl: `${getAppUrl(req)}?view=actions`,
+      }).catch(err => console.warn('[Action Items POST] Assignment email failed:', err));
+    }
 
     return NextResponse.json({ actionItem }, { status: 201 });
   } catch (err: unknown) {

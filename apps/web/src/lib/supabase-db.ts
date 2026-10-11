@@ -20,6 +20,7 @@ import {
 } from '@/types';
 import { getAuthCallbackUrl } from '@/lib/url';
 import { canViewMeeting, isDeactivated, type Viewer } from '@/lib/authz';
+import { normalizeProject } from '@/lib/departments';
 
 type Row = Record<string, unknown>;
 
@@ -100,7 +101,7 @@ export function mapUser(row: Row): User {
     name: (row.name as string) || (row.email as string)?.split('@')[0] || 'User',
     email: (row.email as string) || '',
     role: (row.role as User['role']) || 'STAFF',
-    department: (row.department as string) || '',
+    department: normalizeProject(row.department as string) || '',
     avatarUrl: (row.avatar_url as string) || undefined,
     createdAt: (row.created_at as string) || new Date().toISOString(),
   };
@@ -199,7 +200,7 @@ function mapMeeting(
     audioDuration: (row.audio_duration as number) || undefined,
     transcript: (row.transcript as string) || undefined,
     summary: (row.summary as string) || undefined,
-    department: (row.department as string) || undefined,
+    department: (row.department as string) ? normalizeProject(row.department as string) : undefined,
     createdById: creatorId,
     createdByName: usersMap.get(creatorId)?.name || (row.created_by_name as string) || '',
     participants: participantsMap.get(id) || [],

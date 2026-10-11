@@ -48,7 +48,7 @@ export const NewMeetingModal: React.FC<NewMeetingModalProps> = ({
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 16);
   });
-  const [department, setDepartment] = useState(currentUser.department || 'Engineering');
+  const [department, setDepartment] = useState(currentUser.department || 'Vaccine Financing');
   const [isProcessing, setIsProcessing] = useState(false);
   const [availableUsers, setAvailableUsers] = useState<User[]>(initialUsers || []);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([currentUser.id]);
@@ -201,7 +201,7 @@ export const NewMeetingModal: React.FC<NewMeetingModalProps> = ({
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <Building2 className="h-3.5 w-3.5 text-slate-500" />
-                Department
+                Project
               </label>
               <select
                 value={department}

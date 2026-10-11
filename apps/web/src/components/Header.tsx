@@ -60,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'meetings': return { section: 'Records', page: 'Meetings, Audio & Transcripts' };
       case 'actions': return { section: 'Execution', page: currentUser.role === 'STAFF' ? 'My Action Items' : 'Action Items & Deliverables' };
       case 'manager': return { section: 'Governance', page: 'Manager Verification Portal' };
-      case 'admin': return { section: 'Administration', page: 'User Management & Onboarding' };
+      case 'admin': return { section: 'Administration', page: 'Principal & Team Management' };
       default: return { section: 'Workspace', page: APP_NAME };
     }
   };
@@ -259,7 +259,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-xs font-bold text-slate-800 leading-none">{currentUser.name}</span>
                 <span className="flex items-center gap-1 text-[10px] text-slate-500 font-medium mt-0.5">
                   <span className={`px-1 rounded text-[9px] font-bold uppercase tracking-wider ${getRoleBadgeStyle(currentUser.role)}`}>
-                    {currentUser.role}
+                    {currentUser.role === 'ADMIN' ? 'PRINCIPAL' : currentUser.role}
                   </span>
                   {currentUser.department && <span className="truncate max-w-[120px]">{currentUser.department}</span>}
                 </span>
@@ -274,14 +274,14 @@ export const Header: React.FC<HeaderProps> = ({
                   <p className="text-xs font-bold text-slate-900">{currentUser.name}</p>
                   <p className="text-[11px] text-slate-500 truncate">{currentUser.email}</p>
                   <span className={`inline-block mt-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${getRoleBadgeStyle(currentUser.role)}`}>
-                    {currentUser.role}
+                    {currentUser.role === 'ADMIN' ? 'PRINCIPAL' : currentUser.role}
                   </span>
                 </div>
 
                 <div className="space-y-0.5 text-xs">
                   <div className="flex items-center gap-2 px-2 py-1.5 text-slate-500">
                     <UserIcon className="h-3.5 w-3.5" />
-                    <span className="text-[11px]">{currentUser.department || 'No department set'}</span>
+                    <span className="text-[11px]">{currentUser.department || 'No project set'}</span>
                   </div>
 
                   {currentUser.role === 'ADMIN' && (
@@ -293,7 +293,7 @@ export const Header: React.FC<HeaderProps> = ({
                       className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-slate-700 hover:bg-slate-100 transition-colors"
                     >
                       <Settings className="h-3.5 w-3.5 text-sky-600" />
-                      Admin Panel
+                      Principal Panel
                     </button>
                   )}
 

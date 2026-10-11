@@ -4,7 +4,7 @@ import { dbGetUsers, dbInviteUser, dbOnboardUser } from '@/lib/supabase-db';
 import { rateLimitResponse } from '@/lib/rate-limit';
 import { sendEmail, staffWelcomeEmail } from '@/lib/email';
 import { getAppUrl } from '@/lib/url';
-import { isValidDepartment, isValidRole } from '@/lib/departments';
+import { isValidDepartment, isValidRole, normalizeProject } from '@/lib/departments';
 
 /**
  * GET /api/users
@@ -50,24 +50,24 @@ export async function POST(req: Request) {
     if (!email || !name || !role) {
       return NextResponse.json({ error: 'email, name and role are required' }, { status: 400 });
     }
-    // Admins are promoted from an existing account, never created directly.
+    // Principals are promoted from an existing account, never created directly.
     if (!isValidRole(role) || role === 'ADMIN') {
       return NextResponse.json({ error: 'Role must be STAFF or MANAGER' }, { status: 400 });
     }
 
-    // Managers may only add staff to their own department
-    let department: string = body.department;
+    // Managers may only add staff to their own project
+    let department: string = normalizeProject(body.department);
     if (caller.role === 'MANAGER') {
       if (role !== 'STAFF') {
         return NextResponse.json({ error: 'Managers can only add Staff members' }, { status: 403 });
       }
       if (department && department !== caller.department) {
-        return NextResponse.json({ error: 'Managers can only add staff to their own department' }, { status: 403 });
+        return NextResponse.json({ error: 'Managers can only add staff to their own project' }, { status: 403 });
       }
       department = caller.department;
     }
     if (!isValidDepartment(department)) {
-      return NextResponse.json({ error: 'A valid department is required' }, { status: 400 });
+      return NextResponse.json({ error: 'A valid project is required' }, { status: 400 });
     }
 
     const limited = await rateLimitResponse('provision', caller.id);

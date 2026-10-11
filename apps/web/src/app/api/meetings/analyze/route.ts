@@ -5,6 +5,8 @@ import { getSessionUser } from '@/lib/supabase-server';
 import { canViewMeeting } from '@/lib/authz';
 import { rateLimitResponse } from '@/lib/rate-limit';
 import { ActionItem } from '@/types';
+import { sendTaskAssignedEmail } from '@/lib/email';
+import { getAppUrl } from '@/lib/url';
 
 const MAX_AUDIO_BASE64_CHARS = 28_000_000; // ≈ 20 MB of audio
 const MAX_TRANSCRIPT_CHARS = 400_000;
@@ -87,6 +89,22 @@ export async function POST(req: Request) {
           aiGuidance: item.aiGuidance,
         });
         createdActionItems.push(created);
+
+        if (created.assigneeEmail) {
+          void sendTaskAssignedEmail({
+            to: created.assigneeEmail,
+            recipientName: created.assigneeName || created.assigneeEmail.split('@')[0],
+            assignedByName: sessionUser.name,
+            itemTitle: created.title,
+            itemDescription: created.description,
+            meetingTitle: meetingTitle || undefined,
+            project: sessionUser.department || undefined,
+            dueDate: created.dueDate,
+            priority: created.priority,
+            aiGuidance: created.aiGuidance,
+            appUrl: `${getAppUrl(req)}?view=actions`,
+          }).catch(err => console.warn('[Meetings Analyze] Assignment email failed:', err));
+        }
       } else {
         // Return structured object if meeting isn't created yet
         createdActionItems.push({

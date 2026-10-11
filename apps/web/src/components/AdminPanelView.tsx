@@ -63,7 +63,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
     name: '',
     email: '',
     role: 'STAFF' as User['role'],
-    department: currentUser.department || 'Engineering',
+    department: currentUser.department || 'Vaccine Financing',
     password: '',
   });
 
@@ -90,7 +90,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
       name: '',
       email: '',
       role: 'STAFF',
-      department: currentUser.department || 'Engineering',
+      department: currentUser.department || 'Vaccine Financing',
       password: '',
     });
     setIsModalOpen(true);
@@ -154,7 +154,8 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
 
   const handleCopyCredentials = () => {
     if (!provisionResult) return;
-    const text = `🎉 You have been onboarded to ${APP_NAME}!\n\nEmail: ${provisionResult.user.email}\nTemporary Password: ${provisionResult.tempPassword}\nDepartment: ${provisionResult.user.department}\nRole: ${provisionResult.user.role}\n\nLogin here: ${provisionResult.loginUrl}`;
+    const roleLabel = provisionResult.user.role === 'ADMIN' ? 'PRINCIPAL' : provisionResult.user.role === 'MANAGER' ? 'PROJECT MANAGER' : 'STAFF';
+    const text = `🎉 You have been onboarded to ${APP_NAME}!\n\nEmail: ${provisionResult.user.email}\nTemporary Password: ${provisionResult.tempPassword}\nProject: ${provisionResult.user.department}\nRole: ${roleLabel}\n\nLogin here: ${provisionResult.loginUrl}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     onShowToast('Onboarding credentials copied to clipboard!', 'success');
@@ -174,7 +175,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
     e.preventDefault();
     if (!editingUser) return;
     if (editForm.role === 'MANAGER' && !editForm.department) {
-      onShowToast('Choose a department for this manager', 'error');
+      onShowToast('Choose a project for this manager', 'error');
       return;
     }
 
@@ -266,16 +267,16 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-slate-900">
-              {isAdmin ? 'Organization Team & Role Administration' : 'Department Staff Onboarding & Team Roster'}
+              {isAdmin ? 'Principal & Team Administration' : 'Project Staff Onboarding & Team Roster'}
             </h2>
             <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold border ${getRoleBadge(currentUser.role)}`}>
-              {getRoleIcon(currentUser.role)} {currentUser.role}
+              {getRoleIcon(currentUser.role)} {currentUser.role === 'ADMIN' ? 'PRINCIPAL' : currentUser.role === 'MANAGER' ? 'PROJECT MANAGER' : 'STAFF'}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
             {isAdmin 
-              ? 'World-standard RBAC: Onboard managers & staff, provision accounts, and manage departmental structures.'
-              : `Onboard and manage staff members assigned to the ${currentUser.department || 'your'} department.`}
+              ? 'World-standard RBAC: Onboard project managers & staff, provision accounts, and manage project structures.'
+              : `Onboard and manage staff members assigned to the ${currentUser.department || 'your'} project.`}
           </p>
         </div>
 
@@ -301,8 +302,8 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
       {/* Role Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Administrators', count: roleStats.admin, icon: Crown, color: 'from-rose-500 to-pink-600', bg: 'bg-rose-50/70', text: 'text-rose-800', border: 'border-rose-200' },
-          { label: 'Department Managers', count: roleStats.manager, icon: Shield, color: 'from-indigo-500 to-violet-600', bg: 'bg-indigo-50/70', text: 'text-indigo-800', border: 'border-indigo-200' },
+          { label: 'Principals', count: roleStats.admin, icon: Crown, color: 'from-rose-500 to-pink-600', bg: 'bg-rose-50/70', text: 'text-rose-800', border: 'border-rose-200' },
+          { label: 'Project Managers', count: roleStats.manager, icon: Shield, color: 'from-indigo-500 to-violet-600', bg: 'bg-indigo-50/70', text: 'text-indigo-800', border: 'border-indigo-200' },
           { label: 'Operational Staff', count: roleStats.staff, icon: Briefcase, color: 'from-sky-500 to-cyan-600', bg: 'bg-sky-50/70', text: 'text-sky-800', border: 'border-sky-200' },
         ].map(stat => (
           <div key={stat.label} className={`rounded-2xl border ${stat.border} ${stat.bg} p-4.5 space-y-2 shadow-xs`}>
@@ -327,24 +328,24 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
           <div className="rounded-xl border-2 border-rose-200 bg-rose-50/80 p-3.5 space-y-2">
             <div className="flex items-center justify-between">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-600 text-white">
-                <Crown className="h-3 w-3" /> ADMIN
+                <Crown className="h-3 w-3" /> PRINCIPAL
               </span>
               <span className="text-[10px] font-semibold text-rose-700">Highest Authority</span>
             </div>
             <p className="text-slate-700 text-[11px] leading-relaxed">
-              Provisions system administrators and department managers. Manages cross-department roles and institutional policies.
+              Provisions principals and project managers. Manages cross-project roles and institutional policies.
             </p>
           </div>
 
           <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50/80 p-3.5 space-y-2">
             <div className="flex items-center justify-between">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-600 text-white">
-                <Shield className="h-3 w-3" /> MANAGER
+                <Shield className="h-3 w-3" /> PROJECT MANAGER
               </span>
-              <span className="text-[10px] font-semibold text-indigo-700">Department Authority</span>
+              <span className="text-[10px] font-semibold text-indigo-700">Project Authority</span>
             </div>
             <p className="text-slate-700 text-[11px] leading-relaxed">
-              Onboards staff into their department, records meetings, delegates tasks, and signs off / verifies proof of work submissions.
+              Onboards staff into their project, records meetings, delegates tasks, and signs off / verifies proof of work submissions.
             </p>
           </div>
 
@@ -362,12 +363,12 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
         </div>
       </div>
 
-      {/* Department Coverage — who manages each department (admins only) */}
+      {/* Project Coverage — who manages each project (admins only) */}
       {isAdmin && (
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2">
             <Building2 className="h-4 w-4 text-indigo-600" />
-            Department Coverage
+            Project Coverage
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
             {departmentOverview.map(({ dept, managers, staffCount }) => (
@@ -408,7 +409,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search team members by name, email, or department..."
+            placeholder="Search team members by name, email, or project..."
             className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-xs"
           />
         </div>
@@ -421,7 +422,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
               onChange={(e) => setSelectedDeptFilter(e.target.value)}
               className="rounded-xl border border-slate-200 bg-white pl-8 pr-8 py-2.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-xs appearance-none"
             >
-              <option value="ALL">All Departments</option>
+              <option value="ALL">All Projects</option>
               {DEPARTMENTS.map(d => (
                 <option key={d} value={d}>{d}</option>
               ))}
@@ -471,7 +472,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
                         <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">You</span>
                       )}
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${getRoleBadge(user.role)}`}>
-                        {getRoleIcon(user.role)} {user.role}
+                        {getRoleIcon(user.role)} {user.role === 'ADMIN' ? 'PRINCIPAL' : user.role === 'MANAGER' ? 'PROJECT MANAGER' : 'STAFF'}
                       </span>
                       {user.status === 'DEACTIVATED' && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-300">
@@ -554,31 +555,31 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
                             : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                         }`}
                       >
-                        {getRoleIcon(r)} {r}
+                        {getRoleIcon(r)} {r === 'ADMIN' ? 'PRINCIPAL' : r}
                       </button>
                     ))}
                   </div>
                   {isSelf && <p className="text-[11px] text-slate-500">You can&apos;t change your own role.</p>}
                 </div>
 
-                {/* Department */}
+                {/* Project */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700">
-                    Department {editForm.role === 'MANAGER' && <span className="text-rose-600">*</span>}
+                    Project {editForm.role === 'MANAGER' && <span className="text-rose-600">*</span>}
                   </label>
                   <select
                     value={editForm.department}
                     onChange={e => setEditForm(f => ({ ...f, department: e.target.value }))}
                     className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   >
-                    {!editForm.department && <option value="">Select a department…</option>}
+                    {!editForm.department && <option value="">Select a project…</option>}
                     {DEPARTMENTS.map(d => (
                       <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
                   {editForm.role === 'MANAGER' && (
                     <p className="text-[11px] text-slate-500">
-                      Managers see meetings and review work for this department only.
+                      Managers see meetings and review work for this project only.
                     </p>
                   )}
                 </div>
@@ -646,7 +647,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">
-                    {isAdmin ? 'Onboard Team Member' : `Onboard Staff to ${currentUser.department || 'Department'}`}
+                    {isAdmin ? 'Onboard Team Member' : `Onboard Staff to ${currentUser.department || 'Project'}`}
                   </h3>
                   <p className="text-[11px] text-slate-500">Instant provisioning or invitation email</p>
                 </div>
@@ -680,8 +681,8 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
                   <div className="space-y-1 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
                     <p><span className="text-slate-500">Email:</span> {provisionResult.user.email}</p>
                     <p><span className="text-slate-500">Temp Password:</span> <strong className="text-sky-400">{provisionResult.tempPassword}</strong></p>
-                    <p><span className="text-slate-500">Department:</span> {provisionResult.user.department}</p>
-                    <p><span className="text-slate-500">Role:</span> {provisionResult.user.role}</p>
+                    <p><span className="text-slate-500">Project:</span> {provisionResult.user.department}</p>
+                    <p><span className="text-slate-500">Role:</span> {provisionResult.user.role === 'ADMIN' ? 'PRINCIPAL' : provisionResult.user.role === 'MANAGER' ? 'PROJECT MANAGER' : 'STAFF'}</p>
                   </div>
                 </div>
 
@@ -761,9 +762,9 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
                   </div>
                 </div>
 
-                {/* Department */}
+                {/* Project */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">Department *</label>
+                  <label className="text-xs font-bold text-slate-700">Project *</label>
                   {isAdmin ? (
                     <select
                       value={form.department}
@@ -779,7 +780,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
                     <input
                       type="text"
                       readOnly
-                      value={currentUser.department || 'Operations'}
+                      value={currentUser.department || 'Vaccine Financing'}
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 font-semibold cursor-not-allowed"
                     />
                   )}
@@ -813,7 +814,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ currentUser, onS
                         }`}
                       >
                         <Shield className="h-3.5 w-3.5 text-indigo-600" />
-                        <span>MANAGER</span>
+                        <span>PROJECT MANAGER</span>
                       </button>
                     )}
                   </div>

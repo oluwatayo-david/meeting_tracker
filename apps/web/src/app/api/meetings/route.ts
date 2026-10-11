@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { extractMeetingInsights } from '@/lib/gemini';
 import { dbGetMeetings, dbCreateMeeting, dbGetUserDirectory, dbCreateActionItem, matchAssignee } from '@/lib/supabase-db';
 import { getSessionUser } from '@/lib/supabase-server';
-import { sendMeetingInvitations } from '@/lib/email';
+import { sendMeetingInvitations, sendTaskAssignedEmail } from '@/lib/email';
+import { getAppUrl } from '@/lib/url';
 import { rateLimitResponse } from '@/lib/rate-limit';
 
 const MAX_PARTICIPANTS = 100;
@@ -121,8 +122,23 @@ export async function POST(req: Request) {
     let extractedActionsCount = 0;
     for (const item of actionItemsToCreate) {
       try {
-        await dbCreateActionItem({ ...item, meetingId: meeting.id });
+        const createdAction = await dbCreateActionItem({ ...item, meetingId: meeting.id });
         extractedActionsCount++;
+        if (createdAction.assigneeEmail) {
+          void sendTaskAssignedEmail({
+            to: createdAction.assigneeEmail,
+            recipientName: createdAction.assigneeName || createdAction.assigneeEmail.split('@')[0],
+            assignedByName: sessionUser.name,
+            itemTitle: createdAction.title,
+            itemDescription: createdAction.description,
+            meetingTitle: meeting.title,
+            project: meeting.department,
+            dueDate: createdAction.dueDate,
+            priority: createdAction.priority,
+            aiGuidance: createdAction.aiGuidance,
+            appUrl: `${getAppUrl(req)}?view=actions`,
+          }).catch(err => console.warn('[Meetings POST] Assignment email failed:', err));
+        }
       } catch (e) {
         console.warn('[Meetings POST] Failed to create action item:', e);
       }

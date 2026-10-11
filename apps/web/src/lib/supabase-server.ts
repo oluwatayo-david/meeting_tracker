@@ -55,12 +55,18 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     .maybeSingle();
 
   const row = (profile || {}) as Record<string, string | null>;
+  let department = row.department || '';
+  if (department && /monitor/i.test(department)) {
+    department = 'Vaccine Financing';
+    void admin.from('users').update({ department: 'Vaccine Financing' }).eq('id', user.id);
+  }
+
   return {
     id: user.id,
     email: row.email || user.email || '',
     name: row.name || user.email?.split('@')[0] || 'A colleague',
     role: (row.role as SessionUser['role']) || 'STAFF',
-    department: row.department || '',
+    department,
   };
 }
 
