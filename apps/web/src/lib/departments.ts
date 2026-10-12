@@ -26,8 +26,8 @@ export function normalizeProject(value: unknown): string {
 export function isValidDepartment(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   const normalized = normalizeProject(value);
-  return (PROJECTS as readonly string[]).includes(normalized as any) ||
-    (PROJECTS as readonly string[]).includes(value as any);
+  const list: readonly string[] = PROJECTS;
+  return list.includes(normalized) || list.includes(value);
 }
 
 export const ROLES = ['ADMIN', 'MANAGER', 'STAFF'] as const;
@@ -35,7 +35,8 @@ export const ROLES = ['ADMIN', 'MANAGER', 'STAFF'] as const;
 export function isValidRole(value: unknown): value is (typeof ROLES)[number] {
   if (typeof value !== 'string') return false;
   if (value === 'PRINCIPAL') return true;
-  return (ROLES as readonly string[]).includes(value as any);
+  const list: readonly string[] = ROLES;
+  return list.includes(value);
 }
 
 export function formatRoleName(role?: string | null): string {
