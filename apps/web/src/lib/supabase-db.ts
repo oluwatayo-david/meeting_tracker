@@ -390,9 +390,27 @@ export async function dbOnboardUser(params: {
   const supabase = getServiceClient();
   const password = params.password || generateTempPassword();
 
+  // A profile left behind by a deleted login still holds this email. Re-create the login
+  // with that profile's id so the person gets their meetings and tasks back, instead of
+  // failing on the unique email constraint.
+  let reuseId: string | undefined;
+  const { data: existing } = await supabase
+    .from('users')
+    .select('id')
+    .eq('email', params.email.toLowerCase())
+    .maybeSingle();
+  if (existing) {
+    const { data: existingAuth } = await supabase.auth.admin.getUserById(existing.id);
+    if (existingAuth?.user) {
+      return { success: false, message: `A user with email ${params.email} already exists.` };
+    }
+    reuseId = existing.id;
+  }
+
   // Direct user provisioning via Supabase Auth Admin API.
   // must_change_password lives in app_metadata, which users cannot edit themselves.
   const { data, error } = await supabase.auth.admin.createUser({
+    ...(reuseId ? { id: reuseId } : {}),
     email: params.email,
     password: password,
     email_confirm: true,
@@ -412,13 +430,21 @@ export async function dbOnboardUser(params: {
   }
 
   if (data?.user) {
-    const userProfile = await dbUpsertUser({
-      id: data.user.id,
-      name: params.name,
-      email: params.email,
-      role: params.role,
-      department: params.department,
-    });
+    let userProfile: User;
+    try {
+      userProfile = await dbUpsertUser({
+        id: data.user.id,
+        name: params.name,
+        email: params.email,
+        role: params.role,
+        department: params.department,
+      });
+    } catch (err) {
+      // Never leave a login without a profile: undo it so onboarding can simply be retried.
+      await supabase.auth.admin.deleteUser(data.user.id);
+      const message = err instanceof Error ? err.message : 'Failed to save user profile';
+      return { success: false, message: `Could not create the profile for ${params.email}: ${message}` };
+    }
 
     return {
       success: true,

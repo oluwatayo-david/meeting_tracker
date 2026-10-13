@@ -6,16 +6,24 @@
  * pick up the deployed URL automatically without hardcoded values.
  *
  * Resolution priority (highest → lowest):
- *  1. NEXT_PUBLIC_APP_URL  (explicit env var — most reliable)
+ *  1. NEXT_PUBLIC_APP_URL / NEXT_PUBLIC_SITE_URL, when it is a public (non-localhost) URL
  *  2. window.location.origin (client-side in browser)
  *  3. x-forwarded-host / host headers (server-side API routes)
- *  4. VERCEL_URL (auto-injected by Vercel platform)
- *  5. http://localhost:3000 (dev fallback)
+ *  4. VERCEL_PROJECT_PRODUCTION_URL / VERCEL_URL (auto-injected by Vercel platform)
+ *  5. A localhost NEXT_PUBLIC_APP_URL, then http://localhost:3000 (local development)
+ *
+ * A localhost env value never beats the real origin: NEXT_PUBLIC_* vars are inlined at
+ * build time, so a dev value that leaks into a deployed build would otherwise put
+ * localhost links in every email.
  */
 
 type HeadersLike = {
   get(name: string): string | null;
 };
+
+function isLocalUrl(url: string): boolean {
+  return /^(https?:\/\/)?(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(url);
+}
 
 /**
  * Get the application's base URL dynamically.
@@ -25,13 +33,11 @@ type HeadersLike = {
  * @param req Optional NextRequest or standard Request for extracting origin headers in API routes
  */
 export function getAppUrl(req?: Request | { headers?: HeadersLike }): string {
-  // 1. Explicit env var — the most authoritative source.
+  // 1. Explicit env var — the most authoritative source, unless it points at localhost.
   //    Set NEXT_PUBLIC_APP_URL in your .env.local / deployment env vars.
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
-  }
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+  const configured = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
+  if (configured && !isLocalUrl(configured)) {
+    return configured;
   }
 
   // 2. If running in browser (client-side), use the active window origin
@@ -64,16 +70,16 @@ export function getAppUrl(req?: Request | { headers?: HeadersLike }): string {
     }
   }
 
-  // 4. Vercel deployment URL (auto-injected by Vercel build environment)
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL.replace(/\/$/, '')}`;
-  }
-  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
-    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL.replace(/\/$/, '')}`;
+  // 4. Vercel URLs (auto-injected by Vercel). The production domain is preferred because
+  //    per-deployment VERCEL_URLs can sit behind Vercel's deployment protection.
+  const vercelHost =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || process.env.NEXT_PUBLIC_VERCEL_URL;
+  if (vercelHost) {
+    return `https://${vercelHost.replace(/^https?:\/\//, '').replace(/\/$/, '')}`;
   }
 
-  // 5. Development fallback
-  return 'http://localhost:3000';
+  // 5. A localhost env value (local development), then the default dev URL
+  return configured || 'http://localhost:3000';
 }
 
 /**

@@ -41,6 +41,7 @@ Supabase SQL lives in `apps/web/supabase/` and is run manually in the Supabase S
 1. `supabase-rls-setup.sql`
 2. `supabase-security-fixes.sql`
 3. `supabase-hardening.sql`
+4. `supabase-user-integrity.sql`
 
 ## Branding
 
